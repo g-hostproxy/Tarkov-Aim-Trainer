@@ -1,0 +1,59 @@
+name: Release
+
+# Builds RaidReady.exe and publishes a GitHub release whenever VERSION
+# changes on main. Bump VERSION (and optionally .github/release-notes.md)
+# to ship a new version.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: v
+        run: echo "tag=v$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if release exists
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.v.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-go@v5
+        if: steps.check.outputs.exists == 'false'
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-H windowsgui -s -w" -o dist/RaidReady/RaidReady.exe .
+          cp README.txt dist/RaidReady/
+          mkdir -p dist/RaidReady/source
+          git archive HEAD | tar -x -C dist/RaidReady/source
+          (cd dist && zip -qr RaidReady.zip RaidReady)
+
+      - name: Publish release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.v.outputs.tag }}" \
+            dist/RaidReady/RaidReady.exe dist/RaidReady.zip \
+            --target "${{ github.sha }}" \
+            --title "RAID//READY ${{ steps.v.outputs.tag }}" \
+            --notes-file .github/release-notes.md \
+            --latest

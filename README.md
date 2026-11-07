@@ -34,6 +34,10 @@ LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov) · Shift hold breat
 
 Settings, PBs and history are stored in `%APPDATA%\RaidReady\data.json`.
 
+## Releases
+
+Pushing a change to `VERSION` on `main` builds the exe and publishes a release automatically (`.github/workflows/release.yml`).
+
 ## Build from source
 
 Requires Go 1.24+.
