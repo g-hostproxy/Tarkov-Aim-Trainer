@@ -28,7 +28,7 @@ Ranks: TIMMY › SCAV › PMC › RAIDER › ROGUE › BOSS
 
 ## Controls
 
-Defaults match Tarkov, and every key can be rebound under **Settings → Key binds** (keyboard keys or mouse buttons).
+Defaults match Tarkov, and every key can be rebound under **Settings → Key binds**, including mouse side buttons (Mouse 4 / Mouse 5), e.g. for leaning like in game.
 
 | Action | Default |
 |---|---|
@@ -49,6 +49,9 @@ Defaults match Tarkov, and every key can be rebound under **Settings → Key bin
 - **Scopes are picture-in-picture**: the world outside the eyepiece stays at normal zoom and only the view inside is magnified, with the rifle and mount visible underneath. Alt + scroll zooms the scope smoothly.
 - **Barrel sway** uses the model from [TarkovCrosshair](https://github.com/g-hostproxy/TarkovCrosshair), calibrated against an in-game laser: keys reach the weapon about 235 ms late, holding A swings the barrel right and D swings it left, walking forward dips it and walking back lifts it, plus a heavy figure-8 walk bob that carries into the scope.
 - **Stances**: crouching and going prone lower your eye height, slow you down and steady the gun. You can't shoot while getting down or up from prone, or while crawling.
+- **Sight choice**: Settings → Sight. Auto gives the holo on close drills and the scope on Long Shot; Holo or Scope forces one on every drill.
+- **Corner Peek** mixes PMCs that swing out full body with PMCs that corner-lean from behind cover, showing only head, shoulder and rifle.
+- **No hit markers**, like Tarkov.
 - **Bullet holes** stay where your misses land (up to 45 at a time, oldest removed first).
 - **Leaning** rolls the view and moves your head about 40 cm out from cover.
 - **Full auto** climbs hard for the first few rounds, levels off, wobbles side to side, and pulls back down once you let go.

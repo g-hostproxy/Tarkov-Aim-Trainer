@@ -161,11 +161,6 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .hbr{position:absolute;bottom:30px;right:28px;text-align:right;font-size:10.5px;letter-spacing:.25em;color:var(--dim)}
 .hbr .bb{width:180px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin-bottom:6px;overflow:hidden}
 .hbr .bb i{display:block;height:100%;background:var(--text);transform-origin:left}
-#hitmark{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;opacity:0}
-#hitmark:before,#hitmark:after{content:"";position:absolute;left:50%;top:0;width:2px;height:100%;margin-left:-1px;background:linear-gradient(#fff 0 35%,transparent 35% 65%,#fff 65%)}
-#hitmark:before{transform:rotate(45deg)}#hitmark:after{transform:rotate(-45deg)}
-#hitmark.go{animation:hm .22s ease-out}
-#hitmark.hd:before,#hitmark.hd:after{background:linear-gradient(var(--red) 0 35%,transparent 35% 65%,var(--red) 65%)}
 @keyframes hm{from{opacity:1;transform:scale(1.35)}to{opacity:0;transform:scale(1)}}
 #fps{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:var(--m);font-size:10px;color:var(--dim2)}
 #reloadTag{position:absolute;left:50%;top:58%;transform:translateX(-50%);font-family:var(--m);font-size:12px;letter-spacing:.3em;color:var(--acc)}
@@ -218,7 +213,6 @@ input[type=range]{width:100%;accent-color:var(--acc)}
   <div id="feed"></div>
   <div class="hbl"><div class="w" id="hWeap">M4A1</div><div class="a" id="hAmmo"></div></div>
   <div class="hbr hidden" id="hBreath"><div class="bb"><i id="hBreathBar"></i></div>HOLD BREATH · SHIFT</div>
-  <div id="hitmark"></div>
   <div id="reloadTag" class="hidden">RELOADING</div>
   <div id="fps"></div>
 </div>
@@ -273,7 +267,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
     <span><span class="kbd">Q / E</span>Lean</span>
     <span><span class="kbd">B</span>Fire mode</span>
     <span><span class="kbd">ESC</span>Pause</span>
-    <span style="margin-left:auto" class="mono" id="verTxt">v1.3.2</span>
+    <span style="margin-left:auto" class="mono" id="verTxt">v1.4.0</span>
   </div>
 </div>
 
@@ -294,7 +288,8 @@ input[type=range]{width:100%;accent-color:var(--acc)}
       <h4>DRILLS</h4>
       <div class="row"><label>Drill length</label><div class="seg" data-k="duration"><button data-v="30">30s</button><button data-v="45">45s</button><button data-v="60">60s</button><button data-v="90">90s</button></div></div>
       <div class="row"><label>Spray weapon<small>Tarkov-style recoil approximations</small></label><select data-k="weapon"><option value="m4">M4A1 · 5.56</option><option value="ak74">AK-74N · 5.45</option><option value="akm">AKM · 7.62x39</option><option value="mp7">MP7A2 · 4.6x30</option></select></div>
-      <div class="row"><label>Long-shot optic</label><div class="seg" data-k="optic"><button data-v="2">2x</button><button data-v="3.5">3.5x</button><button data-v="4">4x</button><button data-v="6">6x</button></div></div>
+      <div class="row"><label>Sight<small>Auto = holo on close drills, scope on Long Shot</small></label><div class="seg" data-k="sight"><button data-v="auto">Auto</button><button data-v="holo">Holo</button><button data-v="scope">Scope</button></div></div>
+      <div class="row"><label>Scope magnification<small>Max zoom. Alt + scroll zooms between 1x and this</small></label><div class="seg" data-k="optic"><button data-v="2">2x</button><button data-v="3.5">3.5x</button><button data-v="4">4x</button><button data-v="6">6x</button></div></div>
       <div class="row"><label>Scale ADS sens by zoom<small>Tarkov slows scoped aim with magnification</small></label><div class="seg" data-k="scopeScale"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
       <div class="row"><label>Weapon sway when scoped<small>Hold SHIFT to steady</small></label><div class="seg" data-k="sway"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
       <div class="row"><label>Barrel movement<small>Tarkov sway, strafe lean and recoil, calibrated in game. The crosshair follows the barrel</small></label><div class="seg" data-k="barrel"><button data-v="1">Tarkov</button><button data-v="0.5">Reduced</button><button data-v="0">Off</button></div></div>
@@ -303,7 +298,6 @@ input[type=range]{width:100%;accent-color:var(--acc)}
     <div class="grp">
       <h4>VISUALS</h4>
       <div class="row"><label>Target visibility<small>"Realistic" removes the outline — spotting is half of Tarkov</small></label><div class="seg" data-k="outline"><button data-v="1">Outlined</button><button data-v="0">Realistic</button></div></div>
-      <div class="row"><label>Hit markers<small>Tarkov has none</small></label><div class="seg" data-k="hitmarks"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
       <div class="row"><label>Show FPS</label><div class="seg" data-k="showFps"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
     </div>
     <div class="grp">
@@ -386,7 +380,7 @@ const fmt=n=>Math.round(n).toLocaleString('en-US');
 
 /* ---------------- persistence ---------------- */
 const DEFAULTS={dpi:800,sens:0.30,aimSens:0.30,fov:65,yaw:0.113636,duration:60,weapon:'m4',optic:4,scopeScale:1,sway:1,
-  crosshair:'dot',chColor:'#d8ff3a',outline:1,hitmarks:1,showFps:0,volume:0.6,walk:1,barrel:1,gun:1,poi:0,leanMode:'hold'};
+  crosshair:'dot',chColor:'#d8ff3a',outline:1,showFps:0,volume:0.6,walk:1,barrel:1,gun:1,poi:0,leanMode:'hold',sight:'auto'};
 // Tarkov default controls. Codes are KeyboardEvent.code, or Mouse0/1/2/3/4 for mouse buttons.
 const DEFAULT_BINDS={fire:'Mouse0',aim:'Mouse2',fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',leanL:'KeyQ',leanR:'KeyE',
   slowLean:'AltLeft',crouch:'KeyC',prone:'KeyX',fireMode:'KeyB',reload:'KeyR',breath:'ShiftLeft',zoomMod:'AltLeft'};
@@ -545,21 +539,27 @@ const PARTS=[ // name, ox, width, yBottom, yTop
   ['leg',-.1,.16,0,.9],['leg',.1,.16,0,.9],['arm',-.29,.12,.86,1.46],['arm',.29,.12,.86,1.46],
   ['stomach',0,.36,.88,1.16],['thorax',0,.46,1.13,1.5],['neck',0,.11,1.47,1.58]];
 const HEAD={y:1.69,r:.115};
-const PCOL={leg:[50,52,44],arm:[62,64,54],stomach:[72,72,58],thorax:[96,92,66],neck:[120,100,84],head:[52,55,48]};
+const PCOL={gun:[26,27,24],leg:[50,52,44],arm:[62,64,54],stomach:[72,72,58],thorax:[96,92,66],neck:[120,100,84],head:[52,55,48]};
 const DMG={head:999,thorax:60,stomach:45,arm:30,leg:35,neck:999};
 function mkTarget(x,z,o={}){ return Object.assign({x,z,y0:0,hp:100,alive:true,dead:0,flash:0,crouch:1,crouchTo:1,v:0,tv:0,t0:G.time,seen:G.time,kind:'static',immortal:false},o); }
-function headPos(t){ return [t.x, t.y0+HEAD.y*t.crouch, t.z]; }
+// Corner lean: the upper body rotates sideways about the hips (t.tilt, radians, + = towards +lateral).
+const LEAN_PIVOT=.78;
+function tiltPt(t,a,y){ const th=t.tilt||0; if(!th) return [a,y]; const p=t.y0+LEAN_PIVOT*t.crouch, h=y-p; if(h<=0) return [a,y];
+  return [a*Math.cos(th)+h*Math.sin(th), p-a*Math.sin(th)+h*Math.cos(th)]; }
+function headPos(t){ const dx=t.x-cam.x, dz=t.z-cam.z, L=Math.hypot(dx,dz)||1, rx=dz/L, rz=-dx/L, [a,y]=tiltPt(t,0,t.y0+HEAD.y*t.crouch); return [t.x+rx*a, y, t.z+rz*a]; }
 function tGeom(t){
   const dx=t.x-cam.x, dz=t.z-cam.z, L=Math.hypot(dx,dz)||1, rx=dz/L, rz=-dx/L;
   const sink=t.alive?0:t.dead*1.6, cs=t.crouch;
   const quads=[];
-  for(const [n,ox,w,y0,y1] of PARTS){
+  const W3=(a,y)=>{ const q=tiltPt(t,a,y); return toCam(t.x+rx*q[0],q[1],t.z+rz*q[0]); };
+  const parts=t.tilt||t.kind==='peek'?PARTS.concat(t.lean?[['gun',.06*(t.side||1),.2,1.5,1.58]]:[]):PARTS;
+  for(const [n,ox,w,y0,y1] of parts){
     const ya=t.y0+y0*cs-sink, yb=t.y0+y1*cs-sink, a=ox-w/2, b=ox+w/2;
-    const c=[toCam(t.x+rx*a,ya,t.z+rz*a),toCam(t.x+rx*b,ya,t.z+rz*b),toCam(t.x+rx*b,yb,t.z+rz*b),toCam(t.x+rx*a,yb,t.z+rz*a)];
+    const c=[W3(a,ya),W3(b,ya),W3(b,yb),W3(a,yb)];
     if(c.some(p=>p[2]<.2)) return null;
     quads.push({n,pts:c.map(proj)});
   }
-  const hc=toCam(t.x,t.y0+HEAD.y*cs-sink,t.z); if(hc[2]<.2) return null;
+  const hq=tiltPt(t,0,t.y0+HEAD.y*cs-sink), hc=toCam(t.x+rx*hq[0],hq[1],t.z+rz*hq[0]); if(hc[2]<.2) return null;
   const hp=proj(hc);
   return {quads,head:{x:hp[0],y:hp[1],r:HEAD.r*cam.f/hc[2]},z:hc[2]};
 }
@@ -653,10 +653,25 @@ function spawnPeek(){
     phase:'wait',timer:rand(.35,1.3),jiggle:Math.random()<.35,speed:rand(3.6,5),seen:1e9});
   t.out=side*(hw+rand(.4,.95)); t.hold=Math.max(.38,1.05-G.kills*.028);
   t.crouch=Math.random()<.25?.7:1;
+  if(Math.random()<.45){ // corner lean: feet stay behind cover, only head, shoulder and arm come out
+    t.lean=true; t.tilt=0; t.lat=side*(hw-.2); t.tiltMax=side*rand(28,33)*D2R; t.tiltSpd=rand(3.2,4.4); t.crouch=Math.random()<.3?.72:1;
+    t.hold=Math.max(.45,1.15-G.kills*.028);
+  }
   placePeek(t); G.targets.push(t);
 }
 function placePeek(t){ t.x=t.bx+t.rx*t.lat; t.z=t.bz+t.rz*t.lat; }
 function updPeek(t,dt){
+  if(t.lean){ // lean out from the hips, hold, lean back; some bait with a quick lean first
+    const tl=(goal)=>{ const d=goal-t.tilt, s=t.tiltSpd*dt; if(Math.abs(d)<=s){t.tilt=goal;return true;} t.tilt+=Math.sign(d)*s; return false; };
+    if(t.phase==='wait'){ t.timer-=dt; if(t.timer<=0) t.phase=t.jiggle?'jig':'out'; }
+    else if(t.phase==='jig'){ if(tl(t.tiltMax*.55)) t.phase='jigb'; }
+    else if(t.phase==='jigb'){ if(tl(0)){ t.jiggle=false; t.phase='wait'; t.timer=rand(.2,.55); } }
+    else if(t.phase==='out'){ if(tl(t.tiltMax)){ t.phase='hold'; t.timer=t.hold; } }
+    else if(t.phase==='hold'){ t.timer-=dt; if(t.timer<=0) t.phase='back'; }
+    else if(t.phase==='back'){ if(tl(0)){ t.alive=false; t.escaped=true; G.escapes++; G.streak=0; feed('MISSED','they leaned back into cover','x'); G.timers.push({at:G.time+.3,fn:spawnPeek}); } }
+    if(t.seen>1e8 && Math.abs(t.tilt)>Math.abs(t.tiltMax)*.6) t.seen=G.time;
+    placePeek(t); return;
+  }
   const mv=(goal)=>{ const d=goal-t.lat, s=t.speed*dt; if(Math.abs(d)<=s){t.lat=goal;return true;} t.lat+=Math.sign(d)*s; return false; };
   if(t.phase==='wait'){ t.timer-=dt; if(t.timer<=0) t.phase=t.jiggle?'jig':'out'; }
   else if(t.phase==='jig'){ if(mv(t.side*(t.hw+.12))){ t.phase='jigb'; } }
@@ -707,8 +722,11 @@ function spawnLong(){
 /* ---------------- shooting ---------------- */
 function curWeapon(){ const m=G.mode; if(!m||m===MODES.track) return null; if(m.optic) return WEAPONS.sr25; if(m.recoil) return WEAPONS[S().weapon]||WEAPONS.m4; return WEAPONS.m4; }
 function isAuto(){ const w=curWeapon(); return G.mode===MODES.track||(!!w&&w.auto&&G.fireAuto); }
-function opticMax(){ return G.mode&&G.mode.optic?+S().optic:1; }
-function opticMag(){ return G.mode&&G.mode.optic?(G.zoom||opticMax()):1; }
+// Sight: 'auto' = holo on the close drills and a scope on Long Shot; or force one everywhere.
+function sightType(){ const v=S().sight||'auto'; return v==='auto'?(G.mode&&G.mode.optic?'scope':'holo'):v; }
+function hasScope(){ return !!G.mode&&sightType()==='scope'; }
+function opticMax(){ return hasScope()?+S().optic:1; }
+function opticMag(){ return hasScope()?(G.zoom||opticMax()):1; }
 function curFov(){ return S().fov; }   // the world is never zoomed; scopes magnify inside the eyepiece only
 function zoomFov(){ return 2*Math.atan(Math.tan(S().fov*D2R/2)/opticMag())*R2D; }
 // Camera takes part of the recoil; the barrel takes all of it plus its own offset (inertia, walk bob, shot kick).
@@ -750,7 +768,6 @@ function onHit(t,part,dist){
   const mode=G.mode; G.hits++; if(part==='head') G.heads++;
   t.flash=.13;
   if(part==='head'){ sfx.head(); sparks(headPos(t)); } else sfx.hit();
-  if(S().hitmarks){ const hm=$('#hitmark'); hm.className=''; void hm.offsetWidth; hm.className='go'+(part==='head'?' hd':''); }
   if(mode.immortal){ G.score+=mode.pts(part); G.streak++; G.bestStreak=Math.max(G.bestStreak,G.streak); return; }
   if(mode.headOnly&&part!=='head'){ G.score+=mode.pts(part); feed('BODY','no kill — head only','x'); G.streak=0; return; }
   t.hp-=DMG[part]; if(t.hp>0){ return; }
@@ -874,17 +891,21 @@ function onRelease(code){
 }
 document.addEventListener('wheel',e=>{
   if(!locked||(G.state!=='play'&&G.state!=='count')) return;
-  if(down('zoomMod')&&G.mode&&G.mode.optic){ // slow zoom on the variable scope
+  if(down('zoomMod')&&hasScope()){ // slow zoom on the variable scope
     G.zoom=clamp((G.zoom||opticMax())*Math.pow(1.06,-Math.sign(e.deltaY)),1,opticMax()); updWalkTag(); return; }
   G.spd=clamp(Math.round((G.spd-Math.sign(e.deltaY)*.1)*10)/10,.3,1); updWalkTag();
 },{passive:true});
 addEventListener('blur',()=>{ G.held={}; G.firing=false; });
 document.addEventListener('mousedown',e=>{
-  if(capturing&&!e.target.closest('.bindbtn')&&bindCapture(`Mouse${e.button}`,e)) return;
+  if(e.button>=3) e.preventDefault();   // side buttons are binds, not browser back/forward
+  if(capturing&&performance.now()-captureT>150&&bindCapture(`Mouse${e.button}`,e)) return;
   if(!locked) return;
   const c=`Mouse${e.button}`; G.held[c]=true; onPress(c);
 });
-document.addEventListener('mouseup',e=>{ const c=`Mouse${e.button}`; G.held[c]=false; onRelease(c); });
+document.addEventListener('auxclick',e=>{ if(e.button>=3) e.preventDefault(); });
+// never let a side button (or anything else) navigate the trainer away mid-drill
+try{ history.pushState(null,'',location.href); addEventListener('popstate',()=>history.pushState(null,'',location.href)); }catch(e){}
+document.addEventListener('mouseup',e=>{ if(e.button>=3) e.preventDefault(); const c=`Mouse${e.button}`; G.held[c]=false; onRelease(c); });
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('keydown',e=>{
   if(bindCapture(normCode(e.code),e)) return;
@@ -912,7 +933,7 @@ function startMode(key,warm){
   $('#dName').textContent=mode.name; $('#dDesc').textContent=mode.long;
   $('#dCtrls').innerHTML=mode.ctrls.map(c=>`<span>${c.replace(/^(\S+)/,'<span class="kbd">$1</span>')}</span>`).join('');
   $('#hMode').textContent=mode.name; $('#hMap').textContent=MAPS[mode.map].name+' · '+mode.tag;
-  const w=curWeapon(); $('#hWeap').textContent=w?`${w.name} · ${w.cal}`:(mode.optic?`SR-25 · ${S().optic}x optic`:'M4A1 · red dot');
+  const w=curWeapon(); $('#hWeap').textContent=w?`${w.name} · ${w.cal}`:(mode.optic?'SR-25':'M4A1');
   syncWalkTog();
   showOnly('deploy');
 }
@@ -1315,7 +1336,7 @@ function drawLamps(){
 }
 function drawReticle(by,bpch,roll){
   const mag=opticMag(), a=G.adsT, cx=G.bp[0], cy=G.bp[1];
-  if(G.mode&&G.mode.optic){
+  if(hasScope()){
     if(a<.45) return;
     const k=clamp((a-.45)/.55,0,1), e=k*k*(3-2*k);
     const Ro=H*.31*lerp(.6,1,e), Ri=Ro*.86;
@@ -1419,7 +1440,7 @@ function vmBuild(kind){
     face(Pl.map(q=>[q[0],q[1],z0]),[0,0,-1]); face(Pl.map(q=>[q[0],q[1],z1]),[0,0,1]);
     for(let i=0;i<n;i++){ const j=(i+1)%n, e=[Pl[j][0]-Pl[i][0],Pl[j][1]-Pl[i][1]];
       face([[Pl[i][0],Pl[i][1],z0],[Pl[j][0],Pl[j][1],z0],[Pl[j][0],Pl[j][1],z1],[Pl[i][0],Pl[i][1],z1]],[e[1],-e[0],0]); } end(); };
-  const long=kind==='sr25';
+  const [gunK,sightK]=kind.split('|'), long=gunK==='sr25', scope=sightK==='scope';
   const BLK=[38,39,36], BLK2=[30,31,29], STEEL=[26,26,26], POLY=[34,34,32], TAN=[120,104,78];
   const hgEnd=long?.55:.47, barEnd=long?.62:.6;
   // stock + buffer tube
@@ -1447,7 +1468,7 @@ function vmBuild(kind){
   if(long) cyl(0,0,.02,.02,barEnd-.02,barEnd+.2,10,[44,44,40]);  // suppressor
   else { box(-.011,.011,-.008,.014,hgEnd+.005,hgEnd+.03,STEEL); cyl(0,0,.0115,.0115,barEnd,barEnd+.055,8,STEEL); }
   // optic
-  if(long){
+  if(scope){
     box(-.013,.013,.039,.064,.17,.19,BLK2); box(-.013,.013,.039,.064,.33,.35,BLK2);   // rings
     tag='scope';
     cyl(0,.084,.016,.016,.1,.4,10,[42,42,37]);                                        // tube
@@ -1498,11 +1519,11 @@ function vmBuild(kind){
 function drawGun(P){
   const s=S(); if(!s.gun||G.state==='deploy') return;
   const a=G.adsT;
-  const kind=G.mode&&G.mode.optic?'sr25':'m4', M=VM[kind]||(VM[kind]=vmBuild(kind));
+  const kind=(G.mode&&G.mode.optic?'sr25':'m4')+'|'+sightType(), M=VM[kind]||(VM[kind]=vmBuild(kind));
   const ry=G.bo.y*D2R, rp=(G.bo.p-G.cbob)*D2R;   // barrel offset in the screen frame
   const w=curWeapon();
   const HP={x:.19,y:-.15,z:.26,roll:.38}; // hip hold, matched to in-raid footage
-  const long=kind==='sr25', AP=long?{y:-.084,z:-.02}:{y:-.0925,z:-.182};   // ADS: sight axis on the eye
+  const AP=sightType()==='scope'?{y:-.084,z:-.02}:{y:-.0925,z:-.182};   // ADS: sight axis on the eye
   const e2=(t=>t*t*(3-2*t))(clamp(a,0,1));
   let px=lerp(HP.x,0,e2), py=lerp(HP.y,AP.y,e2), pz=lerp(HP.z,AP.z,e2), roll=lerp(HP.roll,0,e2);
   if(G.stance==='prone'){ py-=.02*(1-e2); }
@@ -1618,18 +1639,19 @@ $$('#settings [data-k]').forEach(el=>{
 });
 $('#setBtn').onclick=$('#setBtn2').onclick=$('#sensChip').onclick=openSettings;
 // ---- key binds ----
-let capturing=null;
+let capturing=null, captureT=0, capturedLmbT=0;
 function keyName(c){ if(!c) return '—';
-  const m={Mouse0:'LMB',Mouse1:'MMB',Mouse2:'RMB',Mouse3:'MOUSE 4',Mouse4:'MOUSE 5',AltLeft:'ALT',ShiftLeft:'SHIFT',ControlLeft:'CTRL',Space:'SPACE',CapsLock:'CAPS',Tab:'TAB',Backquote:'`'};
+  const m={Mouse0:'LMB',Mouse1:'MMB',Mouse2:'RMB',Mouse3:'MOUSE 4 (BACK)',Mouse4:'MOUSE 5 (FWD)',AltLeft:'ALT',ShiftLeft:'SHIFT',ControlLeft:'CTRL',Space:'SPACE',CapsLock:'CAPS',Tab:'TAB',Backquote:'`'};
   return m[c]||c.replace(/^Key/,'').replace(/^Digit/,'').replace(/^Arrow/,'').toUpperCase(); }
 function renderBinds(){
   $('#binds').innerHTML=Object.keys(DEFAULT_BINDS).map(a=>`<div class="row"><label>${BIND_LABELS[a]}</label><button class="bindbtn${capturing===a?' wait':''}" data-a="${a}">${capturing===a?'Press a key…':keyName(S().binds[a])}</button></div>`).join('');
-  $$('#binds .bindbtn').forEach(b=>b.onclick=e=>{ e.stopPropagation(); capturing=b.dataset.a; renderBinds(); });
+  $$('#binds .bindbtn').forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(performance.now()-capturedLmbT<300) return; /* ignore the click that follows binding LMB itself */ capturing=b.dataset.a; captureT=performance.now(); renderBinds(); });
 }
 function bindCapture(code,e){
   if(!capturing) return false;
   e.preventDefault(); e.stopPropagation();
   if(code!=='Escape'){ S().binds[capturing]=code; saveStore(); }
+  if(code==='Mouse0') capturedLmbT=performance.now();
   capturing=null; renderBinds(); return true;
 }
 $('#resetBinds').onclick=()=>{ S().binds={...DEFAULT_BINDS}; S().leanMode='hold'; saveStore(); syncSettingsUI(); renderBinds(); };
@@ -1649,9 +1671,9 @@ function syncWalkTog(){
 $('#walkTog').onclick=e=>{ e.stopPropagation(); S().walk=S().walk?0:1; saveStore(); syncWalkTog(); };
 function updWalkTag(){
   if(!G.mode) return; const w=curWeapon();
-  const base=w?`${w.name} · ${w.cal}`:(G.mode.optic?`SR-25 · ${S().optic}x optic`:'M4A1 · red dot');
+  const base=w?`${w.name} · ${w.cal}`:(G.mode.optic?'SR-25':'M4A1');
   const fm=w&&G.mode!==MODES.track?(w.auto?(G.fireAuto?' · AUTO':' · SEMI'):' · SEMI'):'';
-  const zm=G.mode.optic?` · ${opticMag().toFixed(1)}x`:'', stn=G.stanceTo!=='stand'?' · '+G.stanceTo.toUpperCase():'';
+  const zm=hasScope()?` · SCOPE ${opticMag().toFixed(1)}x`:' · HOLO', stn=G.stanceTo!=='stand'?' · '+G.stanceTo.toUpperCase():'';
   $('#hWeap').textContent=base.replace(/ · \d+(\.\d+)?x optic/,'')+fm+zm+stn+(S().walk?` · WALK ${Math.round(G.spd*100)}%`:'');
 }
 $('#pause').onclick=e=>{ if(e.target.closest('button')) return; lockPointer(); };
