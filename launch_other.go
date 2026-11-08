@@ -12,4 +12,9 @@ func openApp(url, profile string) (*os.Process, error) {
 	return nil, nil
 }
 
+func openURL(u string) error {
+	fmt.Println("Open in your browser:", u)
+	return nil
+}
+
 func fatal(msg string) { fmt.Fprintln(os.Stderr, msg); os.Exit(1) }

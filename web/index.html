@@ -38,6 +38,8 @@ button{font-family:var(--f);cursor:pointer;border:0;background:none;color:inheri
 @keyframes tick{to{transform:translateX(-100%)}}
 .chip{display:flex;align-items:center;gap:10px;padding:8px 14px;border:1px solid var(--line2);border-radius:999px;font-size:13px;background:var(--panel);backdrop-filter:blur(8px);transition:.2s}
 .chip:hover{border-color:var(--acc);color:var(--acc)}
+.chip.support{color:var(--acc);border-color:rgba(242,176,30,.45);white-space:nowrap}
+.chip.support:hover{background:var(--acc);color:#0b0b08}
 .chip b{color:var(--acc);font-weight:600}
 .iconbtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);display:grid;place-items:center;background:var(--panel);transition:.2s}
 .iconbtn:hover{border-color:var(--acc);color:var(--acc)}
@@ -218,6 +220,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
       <span>RAID<span class="sl">//</span>READY</span><small>TARKOV AIM TRAINER</small>
     </div>
     <div class="ticker"><span>MATCHING… · SEARCHING FOR SERVER… · AWAITING SESSION START… · LOADING LOOT… · SPAWNING… — WARM UP WHILE YOU WAIT · HEAD, EYES · DON'T PUSH SCAV-BOSSES ALONE · CHECK YOUR CORNERS · ALWAYS PRE-AIM HEAD HEIGHT · RAW INPUT · 1:1 TARKOV SENSITIVITY ·</span></div>
+    <button class="chip support" id="supportBtn" title="Support RAID//READY (opens in your browser)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg>Support</button>
     <button class="chip" id="sensChip" title="Sensitivity settings"><span id="chipTxt">—</span></button>
     <button class="iconbtn" id="fsBtn" title="Fullscreen (F11)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     <button class="iconbtn" id="setBtn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -256,7 +259,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
     <span><span class="kbd">RMB</span>ADS (tap = toggle, hold = hold)</span>
     <span><span class="kbd">SHIFT</span>Hold breath</span>
     <span><span class="kbd">ESC</span>Pause</span>
-    <span style="margin-left:auto" class="mono" id="verTxt">v1.0</span>
+    <span style="margin-left:auto" class="mono" id="verTxt">v1.0.1</span>
   </div>
 </div>
 
@@ -1158,6 +1161,7 @@ $$('#settings [data-k]').forEach(el=>{
     S()[k]=v; if(k==='volume'&&AC.m) AC.m.gain.value=v; saveStore(); renderMenu(); });
 });
 $('#setBtn').onclick=$('#setBtn2').onclick=$('#sensChip').onclick=openSettings;
+$('#supportBtn').onclick=()=>{ fetch('/api/support',{method:'POST'}).then(r=>{ if(!r.ok) throw 0; }).catch(()=>window.open('https://github.com/g-hostproxy/Tarkov-Aim-Trainer#support-the-project','_blank')); };
 $('#closeSet').onclick=$('#scrim').onclick=closeSettings;
 $('#resetPB').onclick=()=>{ if(confirm('Reset all personal bests and history?')){ store.pbs={}; store.history=[]; saveStore(); renderMenu(); } };
 function toggleFS(){ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>{}); }

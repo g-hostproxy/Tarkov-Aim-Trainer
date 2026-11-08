@@ -17,6 +17,10 @@ import (
 //go:embed web
 var webFS embed.FS
 
+// supportURL is opened in the user's default browser by the Support button.
+// It points at the Support section of the GitHub README.
+const supportURL = "https://github.com/g-hostproxy/Tarkov-Aim-Trainer#support-the-project"
+
 var (
 	mu       sync.Mutex
 	lastPing = time.Now()
@@ -81,6 +85,22 @@ func main() {
 		mu.Lock()
 		lastPing, gotPing = time.Now(), true
 		mu.Unlock()
+		w.WriteHeader(204)
+	})
+	mux.HandleFunc("/api/support", func(w http.ResponseWriter, r *http.Request) {
+		// Only the app's own page may trigger this, and only with POST.
+		if r.Method != http.MethodPost {
+			w.WriteHeader(405)
+			return
+		}
+		if o := r.Header.Get("Origin"); o != "" && o != "http://"+r.Host {
+			w.WriteHeader(403)
+			return
+		}
+		if err := openURL(supportURL); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
 		w.WriteHeader(204)
 	})
 	go http.Serve(ln, mux)

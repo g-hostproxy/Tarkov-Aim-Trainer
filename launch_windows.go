@@ -52,6 +52,11 @@ func openApp(url, profile string) (*os.Process, error) {
 	return nil, err
 }
 
+// openURL opens a web page in the user's default browser.
+func openURL(u string) error {
+	return exec.Command("rundll32", "url.dll,FileProtocolHandler", u).Start()
+}
+
 func fatal(msg string) {
 	user32 := syscall.NewLazyDLL("user32.dll")
 	mb := user32.NewProc("MessageBoxW")

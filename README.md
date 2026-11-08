@@ -34,6 +34,14 @@ LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov) · Shift hold breat
 
 Settings, PBs and history are stored in `%APPDATA%\RaidReady\data.json`.
 
+## Support the project
+
+RAID//READY is free. If it's helped your raids, you can buy me a coffee:
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/g.hostproxy)
+
+The **Support** button in the app opens this section.
+
 ## Releases
 
 Pushing a change to `VERSION` on `main` builds the exe and publishes a release automatically (`.github/workflows/release.yml`).
