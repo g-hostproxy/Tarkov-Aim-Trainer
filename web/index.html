@@ -273,7 +273,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
     <span><span class="kbd">Q / E</span>Lean</span>
     <span><span class="kbd">B</span>Fire mode</span>
     <span><span class="kbd">ESC</span>Pause</span>
-    <span style="margin-left:auto" class="mono" id="verTxt">v1.3.0</span>
+    <span style="margin-left:auto" class="mono" id="verTxt">v1.3.1</span>
   </div>
 </div>
 
@@ -472,7 +472,7 @@ function rng(seed){ return ()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imu
 const G={state:'menu',mode:null,modeKey:'flick',mapKey:'customs',yaw:0,pitch:0,rec:{p:0,y:0},sw:{p:0,y:0},
   ads:false,adsT:0,rmbT:0,rmbToggleOff:false,firing:false,fireAcc:0,lastSemi:0,breath:1,holdBreath:false,breathLock:0,
   time:0,dur:60,shots:0,hits:0,heads:0,kills:0,score:0,streak:0,bestStreak:0,ttks:[],targets:[],boxes:[],plats:[],covers:[],
-  fx:[],timers:[],ammo:0,reload:0,burst:0,spray:[],escapes:0,menuT:0,warm:null,paused:false,flash:0,
+  fx:[],holes:[],timers:[],ammo:0,reload:0,burst:0,spray:[],escapes:0,menuT:0,warm:null,paused:false,flash:0,
   px:0,pz:0,vx:0,vz:0,spd:1,keys:{},stepPh:0,cbob:0,bo:{y:0,p:0},bv:{y:0,p:0},bp:[0,0],mdx:0,mdy:0,sx:null,rc:null,held:{},stance:'stand',stanceTo:'stand',eye:1.6,lean:0,leanTarget:0,roll:0,zoom:0,fireAuto:false,bobY:0};
 
 /* ---------------- environment ---------------- */
@@ -771,11 +771,31 @@ function recordSpray(t,o,d){
   const s=(dx*nx+dz*nz)/den, px=o[0]+d[0]*s, py=o[1]+d[1]*s, pz=o[2]+d[2]*s;
   const lat=(px-t.x)*nz-(pz-t.z)*nx; G.spray.push([lat,py-t.y0]); if(G.spray.length>150) G.spray.shift();
 }
+const MAX_HOLES=45;   // oldest hole is removed when a new one lands, so they never pile up
 function impact(o,d){
-  let t=nearestBox(o,d);
-  if(d[1]<0) t=Math.min(t,-o[1]/d[1]);
+  let t=1e9, hitBox=null;
+  for(const b of G.boxes){ const tb=rayBox(o,d,b); if(tb>=0&&tb<t){ t=tb; hitBox=b; } }
+  if(d[1]<0){ const tg=-o[1]/d[1]; if(tg<t){ t=tg; hitBox=null; } }
   if(t>600) return;
-  G.fx.push({k:'puff',x:o[0]+d[0]*t,y:o[1]+d[1]*t,z:o[2]+d[2]*t,a:0,life:.7});
+  const x=o[0]+d[0]*t, y=o[1]+d[1]*t, z=o[2]+d[2]*t;
+  G.fx.push({k:'puff',x,y,z,a:0,life:.7});
+  let n=[0,1,0];
+  if(hitBox){ const b=hitBox, c=[[Math.abs(x-(b.x-b.w/2)),[-1,0,0]],[Math.abs(x-(b.x+b.w/2)),[1,0,0]],[Math.abs(y-(b.y0+b.h)),[0,1,0]],
+      [Math.abs(z-(b.z-b.d/2)),[0,0,-1]],[Math.abs(z-(b.z+b.d/2)),[0,0,1]]]; c.sort((a,b2)=>a[0]-b2[0]); n=c[0][1]; }
+  G.holes.push({x,y,z,n,box:hitBox,rot:Math.random()*Math.PI,big:.85+Math.random()*.35});
+  if(G.holes.length>MAX_HOLES) G.holes.shift();
+}
+function drawHole(h,m,d){
+  const n=h.n, u=n[1]?[1,0,0]:n[0]?[0,1,0]:[1,0,0], v=n[1]?[0,0,1]:n[0]?[0,0,1]:[0,1,0];
+  const ring=(r,k)=>{ const pts=[]; for(let i=0;i<k;i++){ const a=h.rot+i/k*Math.PI*2, ca=Math.cos(a)*r*(1+.25*Math.sin(a*3+h.rot)), sa=Math.sin(a)*r;
+      const c=toCam(h.x+n[0]*.004+u[0]*ca+v[0]*sa, h.y+n[1]*.004+u[1]*ca+v[1]*sa, h.z+n[2]*.004+u[2]*ca+v[2]*sa); if(c[2]<NEAR) return null; pts.push(proj(c)); } return pts; };
+  const fog=1-Math.exp(-d/m.fogDist), al=clamp(1-fog*1.1,0,1); if(al<.04) return;
+  const path=pts=>{ ctx.beginPath(); pts.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])); ctx.closePath(); };
+  const chip=ring(.05*h.big,10), core=ring(.017*h.big,8); if(!chip||!core) return;
+  const c0=toCam(h.x,h.y,h.z); const px=.05*h.big*cam.f/Math.max(c0[2],.1);
+  if(px<.6){ const q=proj(c0); ctx.fillStyle=`rgba(14,12,10,${.8*al})`; ctx.fillRect(q[0]-.6,q[1]-.6,1.2,1.2); return; }
+  path(chip); ctx.fillStyle=`rgba(${h.box?'205,196,176':'120,110,90'},${.32*al})`; ctx.fill();
+  path(core); ctx.fillStyle=`rgba(14,12,10,${.92*al})`; ctx.fill();
 }
 function sparks(p){ for(let i=0;i<9;i++) G.fx.push({k:'spark',x:p[0],y:p[1],z:p[2],vx:rand(-2,2),vy:rand(.5,3),vz:rand(-2,2),a:0,life:rand(.2,.45)}); }
 let feedN=0;
@@ -898,7 +918,7 @@ function startMode(key,warm){
 }
 function resetRun(){
   Object.assign(G,{yaw:0,pitch:0,rec:{p:0,y:0},sw:{p:0,y:0},ads:false,adsT:0,firing:false,fireAcc:0,breath:1,breathLock:0,time:0,
-    shots:0,hits:0,heads:0,kills:0,score:0,streak:0,bestStreak:0,ttks:[],targets:[],fx:[],timers:[],reload:0,burst:0,spray:[],escapes:0,lastKill:0,paused:false,lastCover:null,
+    shots:0,hits:0,heads:0,kills:0,score:0,streak:0,bestStreak:0,ttks:[],targets:[],fx:[],holes:[],timers:[],reload:0,burst:0,spray:[],escapes:0,lastKill:0,paused:false,lastCover:null,
     px:0,pz:0,vx:0,vz:0,stepPh:0,cbob:0,bo:{y:0,p:0},bv:{y:0,p:0},keys:{},mdx:0,mdy:0,sx:null,rc:null,stance:'stand',stanceTo:'stand',eye:1.6,lean:0,leanTarget:0,roll:0,bobY:0});
   G.zoom=opticMax(); G.fireAuto=!!(G.mode&&G.mode.auto);
   cam.x=0; cam.z=0; cam.y=1.6;
@@ -999,7 +1019,7 @@ function warmSummary(w){
   $('#sensNote').dataset.warm=1; $('#sensNote').innerHTML=`<b>Warm-up done — ${RANKS[avgRank]} average.</b> Strongest: ${MODES[best.mode].name}. Weakest: ${MODES[worst.mode].name} — run it once more before you load in. Good luck out there.`;
 }
 function toMenu(){
-  G.state='menu'; G.mode=null; G.targets=[]; G.fx=[]; G.ads=false; G.adsT=0; G.rec={p:0,y:0}; G.sw={p:0,y:0}; G.pitch=0;
+  G.state='menu'; G.mode=null; G.targets=[]; G.fx=[]; G.holes=[]; G.ads=false; G.adsT=0; G.rec={p:0,y:0}; G.sw={p:0,y:0}; G.pitch=0;
   G.px=G.pz=G.vx=G.vz=0; G.bo={y:0,p:0}; G.bv={y:0,p:0}; G.cbob=0; G.sx=null; G.rc=null; G.lean=G.leanTarget=G.roll=0; G.stance=G.stanceTo='stand'; G.eye=1.6; cam.x=0; cam.z=0; cam.y=1.6;
   if(document.pointerLockElement) document.exitPointerLock();
   showOnly('menu'); $('#hud').classList.add('hidden');
@@ -1205,13 +1225,15 @@ function renderWorld(yaw,pitch,vfov,roll,ox,oy){
   g=ctx.createLinearGradient(0,hz,0,hz+f*1.2); g.addColorStop(0,rgb(m.fog)); g.addColorStop(.08,rgb(fogMix(m.ground,60,m))); g.addColorStop(1,rgb(m.ground));
   ctx.fillStyle=g; ctx.fillRect(-W,hz-1,W*3,H*3);
   drawGrid(m);
+  for(const h of G.holes) if(!h.box) drawHole(h,m,Math.hypot(h.x-cam.x,h.z-cam.z));
   // draw list
   const list=[];
   for(const b of G.boxes){ const nx=clamp(cam.x,b.x-b.w/2,b.x+b.w/2), nz=clamp(cam.z,b.z-b.d/2,b.z+b.d/2); list.push({k:0,o:b,d:b.bg?1e9:Math.hypot(nx-cam.x,nz-cam.z)}); }
   for(const t of G.targets) list.push({k:1,o:t,d:Math.hypot(t.x-cam.x,t.z-cam.z)});
   for(const fx of G.fx) list.push({k:2,o:fx,d:Math.hypot(fx.x-cam.x,fx.z-cam.z)});
+  for(const h of G.holes) if(h.box){ const b=h.box, nx=clamp(cam.x,b.x-b.w/2,b.x+b.w/2), nz=clamp(cam.z,b.z-b.d/2,b.z+b.d/2); list.push({k:3,o:h,d:Math.hypot(nx-cam.x,nz-cam.z)-.001,dd:Math.hypot(h.x-cam.x,h.z-cam.z)}); }
   list.sort((a,b)=>b.d-a.d);
-  for(const it of list){ if(it.k===0) drawBox(it.o,m,it.d); else if(it.k===1) drawTarget(it.o,m,it.d); else drawFx(it.o,m,it.d); }
+  for(const it of list){ if(it.k===0) drawBox(it.o,m,it.d); else if(it.k===1) drawTarget(it.o,m,it.d); else if(it.k===3) drawHole(it.o,m,it.dd); else drawFx(it.o,m,it.d); }
   if(m.lamps) drawLamps();
   ctx.restore();
 }
@@ -1329,10 +1351,12 @@ function drawReticle(by,bpch,roll){
     return;
   }
   if(a>.5){ // EOTech-style holo: 68 MOA ring + 1 MOA dot, on the barrel
-    const f=(H/2)/Math.tan(S().fov*D2R/2), rr=Math.max(9,f*Math.tan(34/60*D2R));
+    const rr=Math.max(9,H*.016), lw=Math.max(1.2,H*.0016);
     ctx.save(); ctx.globalAlpha=clamp((a-.5)/.3,0,1);
-    ctx.shadowColor='#ff2a1a'; ctx.shadowBlur=8; ctx.strokeStyle='rgba(255,60,40,.95)'; ctx.fillStyle='#ff3a24'; ctx.lineWidth=1.6;
-    ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.stroke(); ctx.beginPath(); ctx.arc(cx,cy,1.6,0,7); ctx.fill();
+    ctx.shadowColor='rgba(255,70,40,.8)'; ctx.shadowBlur=6; ctx.strokeStyle='rgba(255,92,60,.92)'; ctx.fillStyle='rgba(255,92,60,.95)'; ctx.lineWidth=lw;
+    ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.stroke();
+    ctx.beginPath(); for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ ctx.moveTo(cx+dx*rr*.72,cy+dy*rr*.72); ctx.lineTo(cx+dx*rr*1.3,cy+dy*rr*1.3); } ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,lw*.9,0,7); ctx.fill();
     ctx.restore();
   }
   // no hip-fire crosshair, like Tarkov
@@ -1418,11 +1442,24 @@ function vmBuild(kind){
     box(-.036,-.016,.074,.094,.24,.27,[48,48,42]);                                    // windage turret, left side
     tag='';
   } else {
-    box(-.021,.021,.045,.058,.245,.345,BLK2);                     // EOTech base
-    box(-.021,-.016,.058,.1,.255,.315,BLK); box(.016,.021,.058,.1,.255,.315,BLK); // hood sides
-    box(-.021,.021,.1,.107,.255,.315,BLK);                        // hood top
-    box(-.021,.021,.058,.102,.315,.35,[34,35,32]);                // body / battery housing
-    begin([140,200,230],'glass'); face([[-.016,.058,.27],[.016,.058,.27],[.016,.1,.27],[-.016,.1,.27]]); end();
+    // EOTech-style holo: base, control-panel body, and a hood around an open window
+    const HB=[40,42,40], HP2=[30,31,30];
+    box(-.022,.022,.039,.046,.27,.37,BLK2);                       // mount
+    box(-.025,.025,.046,.073,.29,.37,HB,'polymer');               // lower body (batteries)
+    box(-.0255,-.0212,.073,.111,.31,.355,HB,'polymer'); box(.0212,.0255,.073,.111,.31,.355,HB,'polymer'); // hood sides
+    box(-.0255,.0255,.1065,.1115,.31,.355,HB,'polymer');          // hood top
+    box(-.0212,.0212,.073,.0755,.31,.355,HP2,'polymer');          // window bottom lip
+    // control panel on the rear face: two screws and the brightness button
+    box(-.019,-.013,.054,.06,.286,.29,[22,23,22]); box(.013,.019,.054,.06,.286,.29,[22,23,22]);
+    cyl(0,.057,.0065,.0065,.283,.29,10,[26,27,26]); cyl(0,.057,.0038,.0038,.281,.283,8,[52,54,50]);
+    box(-.016,-.006,.047,.051,.286,.29,[24,25,24]); box(.006,.016,.047,.051,.286,.29,[24,25,24]);
+    begin([140,200,230],'glass'); face([[-.0212,.0755,.35],[.0212,.0755,.35],[.0212,.1065,.35],[-.0212,.1065,.35]]); end();
+    // flip-up rear sight (folded up, behind the holo) — what you see at the bottom when aiming
+    const RS=[118,118,112];
+    box(-.019,.019,.039,.05,.235,.27,RS); box(-.026,.026,.039,.045,.24,.265,RS);     // base clamp
+    box(-.019,-.011,.05,.077,.245,.26,RS); box(.011,.019,.05,.077,.245,.26,RS);      // protective ears
+    box(-.008,.008,.05,.062,.246,.259,RS);                                         // aperture post
+    cyl(0,.068,.008,.008,.247,.258,10,RS); cyl(0,.068,.0032,.0032,.244,.247,8,[20,20,20]); // aperture disc + hole
   }
   // support hand on the handguard + sleeve going down-left
   const hz=long?.37:.34, GLV=[64,58,48], GLV2=[50,46,39], SLV=[70,72,54];
@@ -1446,7 +1483,7 @@ function drawGun(P){
   const ry=G.bo.y*D2R, rp=(G.bo.p-G.cbob)*D2R;   // barrel offset in the screen frame
   const w=curWeapon();
   const HP={x:.19,y:-.15,z:.26,roll:.38}; // hip hold, matched to in-raid footage
-  const long=kind==='sr25', AP=long?{y:-.084,z:-.02}:{y:-.079,z:-.11};   // ADS: sight axis on the eye
+  const long=kind==='sr25', AP=long?{y:-.084,z:-.02}:{y:-.091,z:-.175};   // ADS: sight axis on the eye
   const e2=(t=>t*t*(3-2*t))(clamp(a,0,1));
   let px=lerp(HP.x,0,e2), py=lerp(HP.y,AP.y,e2), pz=lerp(HP.z,AP.z,e2), roll=lerp(HP.roll,0,e2);
   if(G.stance==='prone'){ py-=.02*(1-e2); }
@@ -1479,7 +1516,7 @@ function drawGun(P){
     if(poly.length<3) continue;
     ctx.beginPath(); poly.forEach((q,i)=>{ const X=W/2+q[0]*f/q[2], Y=H/2-q[1]*f/q[2]; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }); ctx.closePath();
     const fc=it.fc;
-    if(fc.mat==='glass'){ ctx.fillStyle='rgba(150,205,235,.13)'; ctx.fill(); ctx.strokeStyle='rgba(200,230,255,.18)'; ctx.lineWidth=1; ctx.stroke(); continue; }
+    if(fc.mat==='glass'){ ctx.fillStyle='rgba(150,205,235,.05)'; ctx.fill(); ctx.strokeStyle='rgba(200,230,255,.18)'; ctx.lineWidth=1; ctx.stroke(); continue; }
     const n=it.n, vd=v3.norm(v3.mul(it.c,-1)), dif=Math.max(0,v3.dot(n,L));
     const hv=v3.norm(v3.add(L,vd)), spec=Math.pow(Math.max(0,v3.dot(n,hv)),fc.mat==='metal'?14:6);
     const [ka,kd,ks]=fc.mat==='metal'?[.32,.62,.55]:fc.mat==='polymer'?[.34,.6,.18]:[.4,.62,.04];
