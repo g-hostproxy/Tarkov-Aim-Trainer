@@ -29,6 +29,7 @@ DRILLS
 
 CONTROLS
   LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov)
+  WASD walk (toggle it on the screen before each drill) · scroll = walk speed
   SHIFT hold breath · R reload · ESC pause · F11 fullscreen · 1-6 quick start
 
 YOUR DATA

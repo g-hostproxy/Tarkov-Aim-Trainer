@@ -28,7 +28,13 @@ Ranks: TIMMY › SCAV › PMC › RAIDER › ROGUE › BOSS
 
 ## Controls
 
-LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov) · Shift hold breath · R reload · Esc pause · F11 fullscreen · 1–6 quick start
+LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov) · WASD walk · scroll wheel walk speed · Shift hold breath · R reload · Esc pause · F11 fullscreen · 1–6 quick start
+
+## Walking and barrel movement
+
+Walking can be switched on or off on the screen before each drill. With it on, WASD moves you (slower backwards, sideways and while aiming) and the scroll wheel sets your walk speed, like in raid.
+
+The barrel moves on its own, separate from your view: it lags behind fast turns, bobs while you walk, and kicks on every shot. Shots go where the barrel points, not to the middle of the screen, so a centre-screen crosshair overlay drifts off your point of impact the same way it does in Tarkov. Under Settings you can set barrel movement to Tarkov, Reduced or Off, hide the weapon model, or show a red ring where the barrel points as a training aid.
 
 ## Your data
 
