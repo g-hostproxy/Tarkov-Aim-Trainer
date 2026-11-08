@@ -28,13 +28,31 @@ Ranks: TIMMY › SCAV › PMC › RAIDER › ROGUE › BOSS
 
 ## Controls
 
-LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov) · WASD walk · scroll wheel walk speed · Shift hold breath · R reload · Esc pause · F11 fullscreen · 1–6 quick start
+Defaults match Tarkov, and every key can be rebound under **Settings → Key binds** (keyboard keys or mouse buttons).
 
-## Walking and barrel movement
+| Action | Default |
+|---|---|
+| Fire / aim down sights | LMB / RMB (tap = toggle, hold = hold) |
+| Move | WASD (scroll wheel = walk speed) |
+| Crouch / prone | C / X |
+| Lean left / right | Q / E (hold, or toggle in settings) |
+| Slow lean | Hold Alt + Q/E or A/D to lean gradually; it stays until you tap Q/E |
+| Fire mode | B (semi / full auto) |
+| Scope zoom | Hold Alt + scroll |
+| Hold breath | Shift |
+| Reload | R |
+| Pause / fullscreen | Esc / F11 |
 
-Walking can be switched on or off on the screen before each drill. With it on, WASD moves you (slower backwards, sideways and while aiming) and the scroll wheel sets your walk speed, like in raid.
+## How it plays
 
-The barrel moves on its own, separate from your view, using the sway model from [TarkovCrosshair](https://github.com/g-hostproxy/TarkovCrosshair) (calibrated against an in-game laser). Keys reach the weapon about 235 ms late. Holding A swings the barrel right and holding D swings it left, and it stays there until you let go. Walking forward dips it, walking back lifts it, and it bobs in a figure-8 at Tarkov's 1.2 Hz step rate. Fast mouse turns make it lag, and every shot kicks it up; on full auto the climb levels off and recovers once you stop. The crosshair, red dot and scope all ride on the barrel, so they always show where the shot will land. Under Settings you can set barrel movement to Tarkov, Reduced or Off, and turn the weapon model off.
+- **Hip fire has no crosshair**, like Tarkov. Aim down sights to get a reticle; it sits on the barrel, so it always shows where the shot lands.
+- **Scopes are picture-in-picture**: the world outside the eyepiece stays at normal zoom and only the view inside is magnified, with the rifle and mount visible underneath. Alt + scroll zooms the scope smoothly.
+- **Barrel sway** uses the model from [TarkovCrosshair](https://github.com/g-hostproxy/TarkovCrosshair), calibrated against an in-game laser: keys reach the weapon about 235 ms late, holding A swings the barrel right and D swings it left, walking forward dips it and walking back lifts it, plus a heavy figure-8 walk bob that carries into the scope.
+- **Stances**: crouching and going prone lower your eye height, slow you down and steady the gun. You can't shoot while getting down or up from prone, or while crawling.
+- **Leaning** rolls the view and moves your head about 40 cm out from cover.
+- **Full auto** climbs hard for the first few rounds, levels off, wobbles side to side, and pulls back down once you let go.
+
+Walking can be switched on or off on the screen before each drill. Recoil, sway, stance and lean values are tuned to feel like Tarkov; they are not pulled from the game files.
 
 ## Your data
 

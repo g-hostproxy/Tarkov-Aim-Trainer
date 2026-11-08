@@ -1,13 +1,14 @@
-### What's new in 1.2.0
-- **Your crosshair now follows the barrel.** It always sits where the shot will land, so if it's on the head, you hit the head. The red dot and scope follow the barrel too.
-- **Laser-calibrated Tarkov sway**, ported from TarkovCrosshair's "Tarkov Default" preset:
-  - keys reach the weapon about 235 ms late
-  - hold A and the barrel swings right and stays there; hold D and it swings left
-  - walking forward dips the barrel, walking back lifts it
-  - figure-8 walk bob at Tarkov's 1.2 Hz step rate
-  - mouse-look lag on fast turns
-- **Tarkov recoil feel:** every shot snaps the barrel up; on full auto the climb levels off, recovers slowly while firing and quickly once you let go. The cross crosshair opens up while you move and shoot.
-- **New 3D weapon model.** A lit, low-poly M4A1 with an EOTech-style holo, or an SR-25 with a scope and suppressor on the long-shot drill, held in gloved hands with sleeves. It sways, kicks, dips on reload and shows the muzzle flash.
+### What's new in 1.3.0
+- **Tarkov-style scope.** Picture-in-picture: the world outside the eyepiece stays normal and only the view inside is magnified, with a thick rubber eyepiece, duplex reticle, and the rifle and mount visible underneath. **Alt + scroll** zooms the scope smoothly.
+- **Real ADS on the M4.** Aiming brings the holo up to your eye with an EOTech-style ring-and-dot, and the rifle stays visible below it.
+- **No hip-fire crosshair**, like Tarkov. Aim to get a reticle; it always sits where the barrel points.
+- **Crouch (C) and prone (X).** Lower eye height, slower movement, steadier aim and less recoil. You can't shoot while getting into or out of prone, or while crawling.
+- **Leaning.** Q/E lean (hold by default, toggle in settings) rolls the view and moves your head out from cover. **Alt + Q/E** (or Alt + A/D, Tarkov's default) leans gradually and stays there; tap Q/E to stand back up.
+- **Full auto everywhere.** B switches between semi and full auto. Full auto climbs hard for the first few rounds, levels off, wobbles side to side and pulls back down when you let go. The SR-25 stays semi-only.
+- **Heavier walk bob**, carried into the scope while you move.
+- **Key binds.** Every action can be rebound to a key or mouse button under Settings → Key binds, with a one-click reset to Tarkov defaults.
+
+Recoil, sway, stance and lean values are tuned to feel like Tarkov; they are not taken from the game files.
 
 ### Install
 Download **RaidReady.exe** below and double-click it. Unsigned exe, so if SmartScreen appears: **More info → Run anyway**.

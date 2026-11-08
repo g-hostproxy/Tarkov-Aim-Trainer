@@ -98,6 +98,9 @@ button{font-family:var(--f);cursor:pointer;border:0;background:none;color:inheri
 .grp h4{font-size:11px;letter-spacing:.32em;color:var(--acc);margin-bottom:14px;font-weight:500}
 .row{display:grid;grid-template-columns:1fr 150px;align-items:center;gap:14px;padding:7px 0}
 .row label{font-size:14px}
+.bindbtn{padding:8px 10px;border:1px solid var(--line2);border-radius:8px;font-family:var(--m);font-size:12px;color:var(--text);background:var(--panel2);text-align:center}
+.bindbtn:hover{border-color:var(--acc)}
+.bindbtn.wait{border-color:var(--acc);color:var(--acc)}
 .row label small{display:block;color:var(--dim);font-size:11.5px;margin-top:2px;line-height:1.35}
 input[type=number],select{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--line2);color:var(--text);font-family:var(--m);font-size:14px;padding:9px 10px;border-radius:8px;outline:none}
 input[type=number]:focus,select:focus{border-color:var(--acc)}
@@ -266,9 +269,11 @@ input[type=range]{width:100%;accent-color:var(--acc)}
   <div class="foot">
     <span><span class="kbd">1–6</span>Quick-start drill</span>
     <span><span class="kbd">RMB</span>ADS (tap = toggle, hold = hold)</span>
-    <span><span class="kbd">SHIFT</span>Hold breath</span>
+    <span><span class="kbd">C / X</span>Crouch / prone</span>
+    <span><span class="kbd">Q / E</span>Lean</span>
+    <span><span class="kbd">B</span>Fire mode</span>
     <span><span class="kbd">ESC</span>Pause</span>
-    <span style="margin-left:auto" class="mono" id="verTxt">v1.2.0</span>
+    <span style="margin-left:auto" class="mono" id="verTxt">v1.3.0</span>
   </div>
 </div>
 
@@ -297,11 +302,15 @@ input[type=range]{width:100%;accent-color:var(--acc)}
     </div>
     <div class="grp">
       <h4>VISUALS</h4>
-      <div class="row"><label>Hipfire crosshair<small>Follows your barrel, so it shows where the shot lands</small></label><div class="seg" data-k="crosshair"><button data-v="dot">Dot</button><button data-v="cross">Cross</button><button data-v="off">Off</button></div></div>
-      <div class="row"><label>Crosshair color</label><select data-k="chColor"><option value="#d8ff3a">Volt</option><option value="#ff3b3b">Red</option><option value="#3bf0ff">Cyan</option><option value="#ffffff">White</option><option value="#f2b01e">Amber</option></select></div>
       <div class="row"><label>Target visibility<small>"Realistic" removes the outline — spotting is half of Tarkov</small></label><div class="seg" data-k="outline"><button data-v="1">Outlined</button><button data-v="0">Realistic</button></div></div>
       <div class="row"><label>Hit markers<small>Tarkov has none</small></label><div class="seg" data-k="hitmarks"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
       <div class="row"><label>Show FPS</label><div class="seg" data-k="showFps"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
+    </div>
+    <div class="grp">
+      <h4>KEY BINDS</h4>
+      <div class="row"><label>Lean keys<small>Tarkov default is hold</small></label><div class="seg" data-k="leanMode"><button data-v="hold">Hold</button><button data-v="toggle">Toggle</button></div></div>
+      <div id="binds"></div>
+      <div class="row"><label>Restore Tarkov defaults</label><button class="btn sec" id="resetBinds" style="padding:9px 14px;font-size:12px">Reset keys</button></div>
     </div>
     <div class="grp">
       <h4>AUDIO</h4>
@@ -377,7 +386,14 @@ const fmt=n=>Math.round(n).toLocaleString('en-US');
 
 /* ---------------- persistence ---------------- */
 const DEFAULTS={dpi:800,sens:0.30,aimSens:0.30,fov:65,yaw:0.113636,duration:60,weapon:'m4',optic:4,scopeScale:1,sway:1,
-  crosshair:'dot',chColor:'#d8ff3a',outline:1,hitmarks:1,showFps:0,volume:0.6,walk:1,barrel:1,gun:1,poi:0};
+  crosshair:'dot',chColor:'#d8ff3a',outline:1,hitmarks:1,showFps:0,volume:0.6,walk:1,barrel:1,gun:1,poi:0,leanMode:'hold'};
+// Tarkov default controls. Codes are KeyboardEvent.code, or Mouse0/1/2/3/4 for mouse buttons.
+const DEFAULT_BINDS={fire:'Mouse0',aim:'Mouse2',fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',leanL:'KeyQ',leanR:'KeyE',
+  slowLean:'AltLeft',crouch:'KeyC',prone:'KeyX',fireMode:'KeyB',reload:'KeyR',breath:'ShiftLeft',zoomMod:'AltLeft'};
+const BIND_LABELS={fire:'Fire',aim:'Aim down sights',fwd:'Move forward',back:'Move back',left:'Strafe left',right:'Strafe right',
+  leanL:'Lean left',leanR:'Lean right',slowLean:'Slow lean (hold + lean or strafe key)',crouch:'Crouch',prone:'Prone',fireMode:'Fire mode',
+  reload:'Reload',breath:'Hold breath',zoomMod:'Scope zoom (hold + scroll)'};
+DEFAULTS.binds={...DEFAULT_BINDS};
 let store={settings:{...DEFAULTS},pbs:{},history:[]};
 const S=()=>store.settings;
 let apiOK=false;
@@ -385,7 +401,7 @@ async function loadStore(){
   try{const r=await fetch('/api/data',{cache:'no-store'}); if(r.ok){const j=await r.json(); apiOK=true; mergeStore(j); return;}}catch(e){}
   try{mergeStore(JSON.parse(localStorage.getItem('raidready')||'{}'))}catch(e){}
 }
-function mergeStore(j){ if(!j) return; store.settings={...DEFAULTS,...(j.settings||{})}; store.pbs=j.pbs||{}; store.history=j.history||[]; }
+function mergeStore(j){ if(!j) return; store.settings={...DEFAULTS,...(j.settings||{})}; store.settings.binds={...DEFAULT_BINDS,...((j.settings||{}).binds||{})}; store.pbs=j.pbs||{}; store.history=j.history||[]; }
 let saveT=0;
 function saveStore(){ clearTimeout(saveT); saveT=setTimeout(async()=>{
   const body=JSON.stringify(store);
@@ -409,11 +425,14 @@ const MAPS={
 };
 
 /* ---------------- weapons (Tarkov-flavoured approximations) ---------------- */
+// v: camera kick per shot (deg), plat: where a spray levels off, h: horizontal wobble, conv: pull-back
+// while firing, ret: return after you let go. Approximations of Tarkov behaviour, not game-file values.
 const WEAPONS={
-  m4:{name:'M4A1',cal:'5.56x45',rpm:800,v:.42,h:.14,drift:.025,ret:5.5,mag:30,reload:2.1},
-  ak74:{name:'AK-74N',cal:'5.45x39',rpm:650,v:.55,h:.20,drift:-.035,ret:5,mag:30,reload:2.4},
-  akm:{name:'AKM',cal:'7.62x39',rpm:600,v:.78,h:.27,drift:.05,ret:4.3,mag:30,reload:2.5},
-  mp7:{name:'MP7A2',cal:'4.6x30',rpm:950,v:.26,h:.11,drift:0,ret:7.5,mag:40,reload:1.9},
+  m4:{name:'M4A1',cal:'5.56x45',rpm:800,auto:true,v:.55,plat:3.2,h:.16,drift:.02,conv:1.2,ret:5.5,mag:30,reload:2.1},
+  ak74:{name:'AK-74N',cal:'5.45x39',rpm:650,auto:true,v:.65,plat:3.8,h:.22,drift:-.03,conv:1.1,ret:5,mag:30,reload:2.4},
+  akm:{name:'AKM',cal:'7.62x39',rpm:600,auto:true,v:.9,plat:5.2,h:.3,drift:.04,conv:1,ret:4.3,mag:30,reload:2.5},
+  mp7:{name:'MP7A2',cal:'4.6x30',rpm:950,auto:true,v:.35,plat:2.2,h:.1,drift:0,conv:1.6,ret:7,mag:40,reload:1.9},
+  sr25:{name:'SR-25',cal:'7.62x51',rpm:450,auto:false,v:1.5,plat:4,h:.22,drift:.02,conv:3,ret:6.5,mag:20,reload:2.8},
 };
 
 /* ---------------- ranks ---------------- */
@@ -454,7 +473,7 @@ const G={state:'menu',mode:null,modeKey:'flick',mapKey:'customs',yaw:0,pitch:0,r
   ads:false,adsT:0,rmbT:0,rmbToggleOff:false,firing:false,fireAcc:0,lastSemi:0,breath:1,holdBreath:false,breathLock:0,
   time:0,dur:60,shots:0,hits:0,heads:0,kills:0,score:0,streak:0,bestStreak:0,ttks:[],targets:[],boxes:[],plats:[],covers:[],
   fx:[],timers:[],ammo:0,reload:0,burst:0,spray:[],escapes:0,menuT:0,warm:null,paused:false,flash:0,
-  px:0,pz:0,vx:0,vz:0,spd:1,keys:{},stepPh:0,cbob:0,bo:{y:0,p:0},bv:{y:0,p:0},bp:[0,0],mdx:0,mdy:0,sx:null,rc:null};
+  px:0,pz:0,vx:0,vz:0,spd:1,keys:{},stepPh:0,cbob:0,bo:{y:0,p:0},bv:{y:0,p:0},bp:[0,0],mdx:0,mdy:0,sx:null,rc:null,held:{},stance:'stand',stanceTo:'stand',eye:1.6,lean:0,leanTarget:0,roll:0,zoom:0,fireAuto:false,bobY:0};
 
 /* ---------------- environment ---------------- */
 function box(x,z,w,d,h,col,o={}){ return {x,z,w,d,h,y0:o.y0||0,col,ribs:!!o.ribs,bg:!!o.bg,trim:o.trim||null}; }
@@ -686,15 +705,19 @@ function spawnLong(){
 }
 
 /* ---------------- shooting ---------------- */
-function curWeapon(){ return G.mode&&G.mode.recoil?WEAPONS[S().weapon]||WEAPONS.m4:null; }
-function opticMag(){ return G.mode&&G.mode.optic?+S().optic:1; }
-function curFov(){ const mag=lerp(1,opticMag(),G.adsT); return 2*Math.atan(Math.tan(S().fov*D2R/2)/mag)*R2D; }
+function curWeapon(){ const m=G.mode; if(!m||m===MODES.track) return null; if(m.optic) return WEAPONS.sr25; if(m.recoil) return WEAPONS[S().weapon]||WEAPONS.m4; return WEAPONS.m4; }
+function isAuto(){ const w=curWeapon(); return G.mode===MODES.track||(!!w&&w.auto&&G.fireAuto); }
+function opticMax(){ return G.mode&&G.mode.optic?+S().optic:1; }
+function opticMag(){ return G.mode&&G.mode.optic?(G.zoom||opticMax()):1; }
+function curFov(){ return S().fov; }   // the world is never zoomed; scopes magnify inside the eyepiece only
+function zoomFov(){ return 2*Math.atan(Math.tan(S().fov*D2R/2)/opticMag())*R2D; }
 // Camera takes part of the recoil; the barrel takes all of it plus its own offset (inertia, walk bob, shot kick).
 function viewAngles(){ return [G.yaw+(G.rec.y+G.sw.y)*D2R, G.pitch+(G.rec.p+G.sw.p+G.cbob)*D2R]; }
-function barrelAngles(){ return [G.yaw+(G.rec.y+G.sw.y+G.bo.y)*D2R, G.pitch+(G.rec.p+G.sw.p+G.bo.p)*D2R]; }
+function barrelAngles(){ const r=G.roll||0, c=Math.cos(r), sn=Math.sin(r), sx=G.bo.y, su=G.bo.p;
+  return [G.yaw+(G.rec.y+G.sw.y+sx*c-su*sn)*D2R, G.pitch+(G.rec.p+G.sw.p+sx*sn+su*c)*D2R]; }
 function shoot(){
   const mode=G.mode, w=curWeapon();
-  if(G.reload>0) return;
+  if(G.reload>0||!canFire()) return;
   if(w){ if(G.ammo<=0){ startReload(); return; } G.ammo--; }
   G.shots++; G.flash=1; sfx.shot(w);
   let [yaw,pitch]=barrelAngles();
@@ -717,7 +740,11 @@ function shoot(){
   if(best&&!blocked) onHit(best.t,best.part,best.z);
   else{ if(!mode.immortal) G.streak=0; impact(o,d); }
   if(mode!==MODES.track) recoilShot(w);
-  if(w){ const k=(.85+Math.random()*.3)*(1+Math.min(G.burst,10)*.035); G.rec.p+=w.v*k; G.rec.y+=(Math.random()-.5)*2*w.h+w.drift; G.burst++; if(G.ammo===0) G.timers.push({at:G.time+.25,fn:startReload}); }
+  if(w){ // camera recoil: big early kicks that shrink as the climb reaches its plateau, wobble grows instead
+    const st=STANCE[G.stance]||STANCE.stand, room=clamp(1-G.rec.p/w.plat,0,1);
+    G.rec.p+=w.v*(.3+.7*room)*(.9+Math.random()*.2)*st.recoil;
+    G.rec.y=clamp(G.rec.y+((Math.random()-.5)*2*w.h*(.6+.8*(1-room))+w.drift)*st.recoil,-w.h*4,w.h*4);
+    G.burst++; if(G.ammo===0) G.timers.push({at:G.time+.25,fn:startReload}); }
 }
 function onHit(t,part,dist){
   const mode=G.mode; G.hits++; if(part==='head') G.heads++;
@@ -736,6 +763,7 @@ function onHit(t,part,dist){
   if(mode.onKill) mode.onKill(t);
   setTimeout(()=>sfx.kill(),40);
 }
+function canFire(){ return !G.paused&&G.state==='play'&&!stanceBusy()&&!(G.stance==='prone'&&Math.hypot(G.vx,G.vz)>.2); }
 function startReload(){ const w=curWeapon(); if(!w||G.reload>0||G.ammo===w.mag) return; G.reload=w.reload; sfx.reload(w.reload); $('#reloadTag').classList.remove('hidden'); }
 function recordSpray(t,o,d){
   const dx=t.x-o[0], dz=t.z-o[2], L=Math.hypot(dx,dz), nx=dx/L, nz=dz/L;
@@ -768,7 +796,7 @@ function envG(t,a,p,dec){ const g=AC.c.createGain(); g.gain.setValueAtTime(.0001
 function tone(f,dur,vol,type='sine',delay=0,f2){ if(!AC.c) return; const t=AC.c.currentTime+delay, o=AC.c.createOscillator(); o.type=type; o.frequency.setValueAtTime(f,t); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+dur); o.connect(envG(t,.003,vol,dur)); o.start(t); o.stop(t+dur+.05); }
 function noise(dur,vol,ftype,f1,f2,delay=0){ if(!AC.c) return; const t=AC.c.currentTime+delay, s=AC.c.createBufferSource(); s.buffer=AC.n; const fl=AC.c.createBiquadFilter(); fl.type=ftype; fl.frequency.setValueAtTime(f1,t); if(f2) fl.frequency.exponentialRampToValueAtTime(f2,t+dur); s.connect(fl).connect(envG(t,.002,vol,dur)); s.start(t,Math.random()*.3); s.stop(t+dur+.05); }
 const sfx={
-  shot(w){ const heavy=w&&w.v>.6; noise(.16,heavy?.6:.45,'lowpass',6500,600); noise(.05,.25,'highpass',3000); tone(heavy?120:150,.13,.6,'sine',0,38); },
+  shot(w){ const heavy=w&&w.v>.8; noise(.16,heavy?.6:.45,'lowpass',6500,600); noise(.05,.25,'highpass',3000); tone(heavy?120:150,.13,.6,'sine',0,38); },
   hit(){ tone(1500,.05,.16,'triangle'); noise(.04,.12,'bandpass',2500); },
   head(){ tone(2700,.3,.22); tone(4100,.2,.12); noise(.05,.3,'highpass',5000); },
   kill(){ tone(300,.09,.18,'square',0,180); },
@@ -785,7 +813,7 @@ function lockPointer(){
 document.addEventListener('pointerlockchange',()=>{
   locked=document.pointerLockElement===cv;
   if(locked){ $('#deploy').classList.add('hidden'); $('#pause').classList.add('hidden'); if(G.state==='deploy') beginCountdown(); G.paused=false; }
-  else{ G.firing=false; G.holdBreath=false; G.keys={}; if(G.state==='play'||G.state==='count'){ G.paused=true; $('#pause').classList.remove('hidden'); } }
+  else{ G.firing=false; G.holdBreath=false; G.keys={}; G.held={}; if(G.state==='play'||G.state==='count'){ G.paused=true; $('#pause').classList.remove('hidden'); } }
 });
 document.addEventListener('mousemove',e=>{
   if(!locked||G.paused) return;
@@ -796,35 +824,60 @@ document.addEventListener('mousemove',e=>{
   G.yaw+=dY*D2R; G.pitch=clamp(G.pitch+dP*D2R,-88*D2R,88*D2R);
   G.mdx+=e.movementX; G.mdy+=e.movementY; // feeds mouse-look lag in the sway model
 });
-const MOVE_KEYS={KeyW:1,KeyA:1,KeyS:1,KeyD:1};
+const normCode=c=>({ShiftRight:'ShiftLeft',ControlRight:'ControlLeft',AltRight:'AltLeft',MetaRight:'MetaLeft'}[c]||c);
+const B=a=>S().binds[a];
+const down=a=>!!G.held[B(a)];
+const actionsFor=code=>Object.keys(DEFAULT_BINDS).filter(a=>S().binds[a]===code);
+function inRun(){ return locked&&!G.paused&&(G.state==='play'||G.state==='count'); }
+function onPress(code){
+  for(const a of actionsFor(code)){
+    if(a==='fire'&&G.state==='play'&&!G.paused){ G.firing=true; G.burst=0;
+      if(isAuto()){ shoot(); G.fireAcc=0; } else if(performance.now()-G.lastSemi>70){ G.lastSemi=performance.now(); shoot(); } }
+    if(a==='aim'&&G.state==='play'&&!G.paused){ if(G.ads){ G.ads=false; G.rmbToggleOff=true; } else if(!stanceBusy()){ G.ads=true; G.rmbT=performance.now(); G.rmbToggleOff=false; } }
+    if(!inRun()) continue;
+    if(a==='reload'&&G.state==='play') startReload();
+    if(a==='breath') G.holdBreath=true;
+    if(a==='fireMode'){ const w=curWeapon(); if(w&&w.auto&&G.mode!==MODES.track){ G.fireAuto=!G.fireAuto; sfx.beep(G.fireAuto?520:420); feed('FIRE MODE',G.fireAuto?'full auto':'semi-auto'); updWalkTag(); } }
+    if(a==='crouch'){ setStance(G.stanceTo==='crouch'?'stand':'crouch'); }
+    if(a==='prone'){ setStance(G.stanceTo==='prone'?'stand':'prone'); }
+    if((a==='leanL'||a==='leanR')&&!down('slowLean')){ const d=a==='leanL'?-1:1;
+      if(S().leanMode==='toggle') G.leanTarget=G.leanTarget===d?0:d; else G.leanTarget=d; }
+  }
+}
+function onRelease(code){
+  for(const a of actionsFor(code)){
+    if(a==='fire') G.firing=false;
+    if(a==='aim'){ if(G.ads&&!G.rmbToggleOff&&performance.now()-G.rmbT>230) G.ads=false; G.rmbToggleOff=false; }
+    if(a==='breath') G.holdBreath=false;
+    if((a==='leanL'||a==='leanR')&&S().leanMode!=='toggle'&&!down('slowLean')){ const d=a==='leanL'?-1:1; if(G.leanTarget===d) G.leanTarget=0; }
+  }
+}
 document.addEventListener('wheel',e=>{
   if(!locked||(G.state!=='play'&&G.state!=='count')) return;
+  if(down('zoomMod')&&G.mode&&G.mode.optic){ // slow zoom on the variable scope
+    G.zoom=clamp((G.zoom||opticMax())*Math.pow(1.06,-Math.sign(e.deltaY)),1,opticMax()); updWalkTag(); return; }
   G.spd=clamp(Math.round((G.spd-Math.sign(e.deltaY)*.1)*10)/10,.3,1); updWalkTag();
 },{passive:true});
-addEventListener('blur',()=>{ G.keys={}; });
+addEventListener('blur',()=>{ G.held={}; G.firing=false; });
 document.addEventListener('mousedown',e=>{
-  if(!locked||G.paused||G.state!=='play') return;
-  if(e.button===0){ G.firing=true; G.burst=0;
-    if(G.mode.auto){ shoot(); G.fireAcc=0; }
-    else if(performance.now()-G.lastSemi>70){ G.lastSemi=performance.now(); shoot(); } }
-  if(e.button===2){ if(G.ads){ G.ads=false; G.rmbToggleOff=true; } else { G.ads=true; G.rmbT=performance.now(); G.rmbToggleOff=false; } }
+  if(capturing&&!e.target.closest('.bindbtn')&&bindCapture(`Mouse${e.button}`,e)) return;
+  if(!locked) return;
+  const c=`Mouse${e.button}`; G.held[c]=true; onPress(c);
 });
-document.addEventListener('mouseup',e=>{
-  if(e.button===0) G.firing=false;
-  if(e.button===2){ if(G.ads&&!G.rmbToggleOff&&performance.now()-G.rmbT>230) G.ads=false; G.rmbToggleOff=false; }
-});
+document.addEventListener('mouseup',e=>{ const c=`Mouse${e.button}`; G.held[c]=false; onRelease(c); });
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('keydown',e=>{
+  if(bindCapture(normCode(e.code),e)) return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
-  if(MOVE_KEYS[e.code]) G.keys[e.code]=true;
-  if(e.key==='Shift') G.holdBreath=true;
-  if((e.key==='r'||e.key==='R')&&G.state==='play') startReload();
+  const c=normCode(e.code);
+  if(locked&&(c==='AltLeft'||e.altKey||c==='Tab'||c==='ControlLeft')) e.preventDefault();  // keep Alt from opening browser menus
+  if(!e.repeat){ G.held[c]=true; onPress(c); }
   if(G.state==='menu'&&!$('#settings').classList.contains('open')){ const i=+e.key; if(i>=1&&i<=6) startMode(ORDER[i-1]); }
   if(G.state==='results'){ if(e.key==='Enter') $('#rNext').click(); if(e.key==='Escape') $('#rMenu').click(); }
   if(e.key==='Escape'&&$('#settings').classList.contains('open')) closeSettings();
   if(e.key==='F11'){ e.preventDefault(); toggleFS(); }
 });
-document.addEventListener('keyup',e=>{ if(MOVE_KEYS[e.code]) G.keys[e.code]=false; if(e.key==='Shift') G.holdBreath=false; });
+document.addEventListener('keyup',e=>{ const c=normCode(e.code); if(locked&&c==='AltLeft') e.preventDefault(); G.held[c]=false; onRelease(c); });
 
 /* ---------------- flow ---------------- */
 function showOnly(id){ for(const s of ['menu','deploy','pause','results']) $('#'+s).classList.toggle('hidden',s!==id); $('#hud').classList.toggle('hidden',!(id==='deploy'||id==='pause'||id===null)); }
@@ -846,7 +899,8 @@ function startMode(key,warm){
 function resetRun(){
   Object.assign(G,{yaw:0,pitch:0,rec:{p:0,y:0},sw:{p:0,y:0},ads:false,adsT:0,firing:false,fireAcc:0,breath:1,breathLock:0,time:0,
     shots:0,hits:0,heads:0,kills:0,score:0,streak:0,bestStreak:0,ttks:[],targets:[],fx:[],timers:[],reload:0,burst:0,spray:[],escapes:0,lastKill:0,paused:false,lastCover:null,
-    px:0,pz:0,vx:0,vz:0,stepPh:0,cbob:0,bo:{y:0,p:0},bv:{y:0,p:0},keys:{},mdx:0,mdy:0,sx:null,rc:null});
+    px:0,pz:0,vx:0,vz:0,stepPh:0,cbob:0,bo:{y:0,p:0},bv:{y:0,p:0},keys:{},mdx:0,mdy:0,sx:null,rc:null,stance:'stand',stanceTo:'stand',eye:1.6,lean:0,leanTarget:0,roll:0,bobY:0});
+  G.zoom=opticMax(); G.fireAuto=!!(G.mode&&G.mode.auto);
   cam.x=0; cam.z=0; cam.y=1.6;
   G.dur=G.warm?45:+S().duration;
   const w=curWeapon(); G.ammo=w?w.mag:0;
@@ -946,7 +1000,7 @@ function warmSummary(w){
 }
 function toMenu(){
   G.state='menu'; G.mode=null; G.targets=[]; G.fx=[]; G.ads=false; G.adsT=0; G.rec={p:0,y:0}; G.sw={p:0,y:0}; G.pitch=0;
-  G.px=G.pz=G.vx=G.vz=0; G.bo={y:0,p:0}; G.bv={y:0,p:0}; G.cbob=0; G.sx=null; G.rc=null; cam.x=0; cam.z=0; cam.y=1.6;
+  G.px=G.pz=G.vx=G.vz=0; G.bo={y:0,p:0}; G.bv={y:0,p:0}; G.cbob=0; G.sx=null; G.rc=null; G.lean=G.leanTarget=G.roll=0; G.stance=G.stanceTo='stand'; G.eye=1.6; cam.x=0; cam.z=0; cam.y=1.6;
   if(document.pointerLockElement) document.exitPointerLock();
   showOnly('menu'); $('#hud').classList.add('hidden');
   buildEnv('menu',G.menuMap||'customs'); renderMenu();
@@ -956,13 +1010,32 @@ function toMenu(){
 // Walk speed and inertia are approximations of Tarkov's default PMC walk:
 // slower backwards and sideways, slower again while aiming, short ramp up/down.
 const WALK={max:3.0,back:.7,side:.8,ads:.6,acc:9.4,dec:12.7,r:.35};
+// Stances: eye height (m), move speed, time to get there (s), sway and recoil multipliers. Approximations.
+const STANCE={stand:{eye:1.6,speed:1,t:.3,sway:1,recoil:1},crouch:{eye:1.08,speed:.55,t:.3,sway:.75,recoil:.9},prone:{eye:.38,speed:.25,t:.9,sway:.45,recoil:.7}};
+// Lean: full Q/E lean moves the head ~0.4 m sideways and rolls the view; Alt + lean/strafe keys lean gradually and hold.
+const LEAN={off:.4,drop:.1,roll:16,speed:4.5,slow:.9};
+function setStance(t){ if(t===G.stanceTo) return; if(t==='prone'||G.stance==='prone') G.ads=false; G.stanceTo=t; updWalkTag(); }
+function stanceBusy(){ return (G.stanceTo==='prone'||G.stance==='prone')&&Math.abs(G.eye-STANCE[G.stanceTo].eye)>.04; }
+function stepStance(dt){
+  const to=STANCE[G.stanceTo], fromP=G.stance==='prone'||G.stanceTo==='prone';
+  const rate=Math.abs(STANCE.stand.eye-STANCE.crouch.eye)/(fromP?STANCE.prone.t:to.t)*(fromP?1.6:1);
+  const d=to.eye-G.eye; G.eye+=Math.sign(d)*Math.min(Math.abs(d),rate*dt);
+  if(Math.abs(to.eye-G.eye)<.01) G.stance=G.stanceTo;
+  // lean: full lean from Q/E, incremental while the slow-lean modifier is held
+  if(G.state==='play'&&down('slowLean')){ const dir=(down('leanR')||down('right')?1:0)-(down('leanL')||down('left')?1:0);
+    if(dir) G.leanTarget=clamp(G.leanTarget+dir*LEAN.slow*dt,-1,1); }
+  const ld=G.leanTarget-G.lean; G.lean+=Math.sign(ld)*Math.min(Math.abs(ld),LEAN.speed*dt);
+  G.roll=-G.lean*LEAN.roll*D2R;
+  const ry=Math.cos(G.yaw), rz=-Math.sin(G.yaw), off=G.lean*LEAN.off*(G.stance==='prone'?.6:1);
+  cam.x=G.px+ry*off; cam.z=G.pz+rz*off; cam.y=G.eye+G.bobY-Math.abs(G.lean)*LEAN.drop;
+}
 function stepMove(dt){
   const on=G.state==='play'&&S().walk&&G.mode&&G.mode.walkR;
-  const K=G.keys, f=on?(K.KeyW?1:0)-(K.KeyS?1:0):0, r=on?(K.KeyD?1:0)-(K.KeyA?1:0):0;
+  const slow=down('slowLean'), f=on?(down('fwd')?1:0)-(down('back')?1:0):0, r=on&&!slow?(down('right')?1:0)-(down('left')?1:0):0;
   let ix=0, iz=0;
   if(f||r){
     const L=Math.hypot(f,r), ff=f/L*(f>0?1:WALK.back), rr=r/L*WALK.side;
-    const sy=Math.sin(G.yaw), cy=Math.cos(G.yaw), mx=WALK.max*G.spd*(G.ads?WALK.ads:1);
+    const sy=Math.sin(G.yaw), cy=Math.cos(G.yaw), mx=WALK.max*G.spd*(G.ads?WALK.ads:1)*STANCE[G.stance==='prone'||G.stanceTo==='prone'?'prone':G.stance].speed;
     ix=(sy*ff+cy*rr)*mx; iz=(cy*ff-sy*rr)*mx;
   }
   const a=clamp(dt*(f||r?WALK.acc:WALK.dec),0,1); G.vx+=(ix-G.vx)*a; G.vz+=(iz-G.vz)*a;
@@ -975,21 +1048,21 @@ function stepMove(dt){
       if(ox<oz){ nx=b.x+(dx<0?-hx:hx); G.vx=0; } else { nz=b.z+(dz<0?-hz:hz); G.vz=0; } }
   }
   const R=(G.mode&&G.mode.walkR)||0, d=Math.hypot(nx,nz); if(d>R){ nx*=R/d; nz*=R/d; }
-  G.px=nx; G.pz=nz; cam.x=nx; cam.z=nz;
+  G.px=nx; G.pz=nz;
 }
 /* ---------------- barrel dynamics ---------------- */
 // Port of TarkovSway + recoil from TarkovCrosshair (calibrated against an in-game laser,
 // "Tarkov Default" preset). Works in screen pixels at 1080p, then converts to barrel angles
 // so the shot, the crosshair, the red dot and the weapon model all follow the same barrel.
-const SWAY={intensity:.8,inertia:.8,bob:1.2,mouse:.7,lean:39,delay:.235,fwd:22,back:12,lim:45};
+const SWAY={intensity:.8,inertia:.8,bob:6,mouse:.7,lean:39,delay:.235,fwd:22,back:12,lim:45};
 const RECOIL={kickV:3.5,kickH:1,maxClimb:30,recovery:.6};
 function swayState(){ return G.sx||(G.sx={x:0,y:0,vx:0,vy:0,bodyX:0,bodyZ:0,leanY:0,phase:0,bobAmt:0,mvx:0,mvy:0,clock:0,hist:[],outX:0,outY:0}); }
 function recoilState(){ return G.rc||(G.rc={climb:0,wander:0,x:0,y:0,vx:0,vy:0,heat:0,since:10}); }
 function recoilShot(w){
   const B=+S().barrel||0; if(!B) return;
-  const r=recoilState(), k=(w?w.v/.42:(G.mode&&G.mode.optic?1.8:1))*B;
+  const r=recoilState(), k=(w?w.v/.55:1)*B;
   const kv=RECOIL.kickV*k, kh=RECOIL.kickH*k*(w?w.h/.14:1), mc=RECOIL.maxClimb*k;
-  const room=clamp(1-r.climb/mc,0,1);
+  const room=clamp(1-r.climb/mc,0,1); void 0;
   r.climb=Math.min(r.climb+kv*(.25+.75*room),mc*1.15);
   r.wander=clamp(r.wander+(Math.random()*2-1)*kh,-kh*3,kh*3);
   r.vy-=kv*30; r.vx+=(Math.random()*2-1)*kh*12;
@@ -1000,13 +1073,13 @@ function stepBarrel(dt){
   // real movement drives the camera bob and the walk-speed figures
   const sp=Math.hypot(G.vx,G.vz), spF=clamp(sp/WALK.max,0,1);
   G.stepPh+=sp*dt*Math.PI/1.5;
-  cam.y=1.6+Math.sin(G.stepPh*2)*.025*spF;
+  G.bobY=Math.sin(G.stepPh*2)*.03*spF*(G.stance==='prone'?.4:1);
   G.cbob=Math.cos(G.stepPh*2)*.08*spF*B;
   if(!B){ G.bo.y=G.bo.p=0; G.sx=G.rc=null; G.mdx=G.mdy=0; return; }
   dt=Math.min(dt,.1);
   // ---- sway: inputs (keys reach the weapon ~235ms late) ----
-  const walking=G.state==='play'&&S().walk&&G.mode&&G.mode.walkR, K=G.keys;
-  const ix0=walking?(K.KeyD?1:0)-(K.KeyA?1:0):0, iz0=walking?(K.KeyW?1:0)-(K.KeyS?1:0):0;
+  const walking=G.state==='play'&&S().walk&&G.mode&&G.mode.walkR, slow=down('slowLean');
+  const ix0=walking&&!slow?(down('right')?1:0)-(down('left')?1:0):0, iz0=walking?(down('fwd')?1:0)-(down('back')?1:0):0;
   s.clock+=dt; s.hist.push([s.clock,ix0,iz0]);
   while(s.hist.length>2&&s.hist[1][0]<=s.clock-P.delay) s.hist.shift();
   let ix=0, iz=0; for(let i=s.hist.length-1;i>=0;i--){ if(s.hist[i][0]<=s.clock-P.delay){ ix=s.hist[i][1]; iz=s.hist[i][2]; break; } }
@@ -1034,7 +1107,7 @@ function stepBarrel(dt){
   s.x=clamp(s.x,-P.lim,P.lim); s.y=clamp(s.y,-P.lim,P.lim);
   // small idle breathing so a standing gun is never perfectly frozen
   const breathX=Math.sin(G.time*.73)*.9, breathY=Math.sin(G.time*1.31)*1.2;
-  s.outX=s.x+bx+breathX; s.outY=s.y+s.leanY+by+breathY;
+  s.outX=s.x+breathX; s.outY=s.y+s.leanY+breathY; s.bx=bx; s.by=by;
   // ---- recoil: snap up per shot, climb levels off, recovers slowly while firing ----
   r.since+=dt;
   let rate=1.5+9*RECOIL.recovery; if(r.since<.18) rate*=.2;
@@ -1043,11 +1116,12 @@ function stepBarrel(dt){
   for(let i=0;i<rs;i++){ const ay=rw*rw*(-r.climb-r.y)-2*rz*rw*r.vy, ax=rw*rw*(r.wander-r.x)-2*rz*rw*r.vx; r.vy+=ay*rh; r.vx+=ax*rh; r.y+=r.vy*rh; r.x+=r.vx*rh; }
   // ---- pixels (1080p, hip FOV) -> barrel angle; aiming steadies the weapon ----
   const pxDeg=2*Math.tan(S().fov*D2R/2)/1080*R2D*B;
-  const swK=lerp(1,.3,a), rcK=lerp(1,.6,a);
-  G.bo.y=(s.outX*swK+r.x*rcK)*pxDeg;
-  G.bo.p=-(s.outY*swK+r.y*rcK)*pxDeg;
+  const st=STANCE[G.stance]||STANCE.stand, swK=lerp(1,.3,a)*st.sway, bK=lerp(1,.85,a)*st.sway*(G.stance==='prone'?1.6:1), rcK=lerp(1,.6,a)*st.recoil;
+  G.bo.y=(s.outX*swK+s.bx*bK+r.x*rcK)*pxDeg;
+  G.bo.p=-(s.outY*swK+s.by*bK+r.y*rcK)*pxDeg;
 }
-function crossBloom(){ // dynamic spread from TarkovCrosshair: gap opens while moving and firing
+function crossBloom(){ return 0; }
+function _crossBloomUnused(){ // dynamic spread from TarkovCrosshair: gap opens while moving and firing
   const s=G.sx, r=G.rc; if(!s||!r) return 0;
   return Math.min(12,(Math.min(Math.hypot(s.bodyX,s.bodyZ),1.6)*4+r.heat*5)*H/1080);
 }
@@ -1057,11 +1131,11 @@ function step(dt){
   G.time+=dt;
   for(let i=G.timers.length-1;i>=0;i--) if(G.time>=G.timers[i].at){ const t=G.timers[i]; G.timers.splice(i,1); t.fn(); }
   const s=S(), mode=G.mode;
-  G.adsT=clamp(G.adsT+(G.ads?1:-1)*dt/.16,0,1);
+  G.adsT=clamp(G.adsT+(G.ads?1:-1)*dt/.22,0,1);
   // sway + breath
   const mag=opticMag(), scoped=mag>1&&G.adsT>.3;
   if(scoped&&s.sway){
-    let A=.22; const hold=G.holdBreath&&G.breath>0&&G.breathLock<=0;
+    let A=.22*(STANCE[G.stance]||STANCE.stand).sway; const hold=G.holdBreath&&G.breath>0&&G.breathLock<=0;
     if(hold){ G.breath=Math.max(0,G.breath-dt/4.5); A=.03; if(G.breath===0) G.breathLock=1.6; }
     else { G.breath=Math.min(1,G.breath+dt/5); if(G.breathLock>0){ G.breathLock-=dt; A=.5; } }
     const t=G.time;
@@ -1074,12 +1148,13 @@ function step(dt){
     if(G.state!=='play') return;
     const w=curWeapon();
     if(G.reload>0){ G.reload-=dt; if(G.reload<=0){ G.reload=0; G.ammo=w.mag; $('#reloadTag').classList.add('hidden'); if(mode===MODES.spray) placeSpray(); } }
-    if(G.firing&&mode.auto){ const rpm=w?w.rpm:mode.rpm; const iv=60/rpm; G.fireAcc+=dt; while(G.fireAcc>=iv){ G.fireAcc-=iv; shoot(); } }
-    if(w){ const ret=G.firing?w.ret*.3:w.ret; const k=clamp(dt*ret,0,1); G.rec.p-=G.rec.p*k; G.rec.y-=G.rec.y*k*.8; if(!G.firing) G.burst=0; }
+    if(G.firing&&isAuto()&&canFire()){ const rpm=w?w.rpm:mode.rpm; const iv=60/rpm; G.fireAcc+=dt; while(G.fireAcc>=iv){ G.fireAcc-=iv; shoot(); } }
+    if(w){ const ret=G.firing&&isAuto()?w.conv:w.ret; const k=clamp(dt*ret,0,1); G.rec.p-=G.rec.p*k; G.rec.y-=G.rec.y*k*.8; if(!G.firing) G.burst=0; }
     if(mode.update) mode.update(dt);
   }
   stepMove(dt);
   stepBarrel(dt);
+  stepStance(dt);
   for(const t of G.targets){ if(t.flash>0) t.flash-=dt; if(!t.alive) t.dead+=dt; }
   G.targets=G.targets.filter(t=>t.alive||t.dead<.4);
   for(const f of G.fx){ f.a+=dt; if(f.k==='spark'){ f.vy-=9.8*dt; f.x+=f.vx*dt; f.y+=f.vy*dt; f.z+=f.vz*dt; } }
@@ -1092,15 +1167,29 @@ const grainC=document.createElement('canvas'); grainC.width=grainC.height=256;
 (()=>{ const g=grainC.getContext('2d'), im=g.createImageData(256,256); for(let i=0;i<im.data.length;i+=4){ const v=Math.random()*255; im.data[i]=im.data[i+1]=im.data[i+2]=v; im.data[i+3]=255; } g.putImageData(im,0,0); $('#grain').style.backgroundImage=`url(${grainC.toDataURL()})`; })();
 
 function render(){
-  const m=MAPS[G.mapKey]||MAPS.customs;
   let yaw,pitch;
   if(G.state==='menu'){ yaw=Math.sin(G.menuT*.05)*.5+.15; pitch=-.03+Math.sin(G.menuT*.11)*.02; }
   else [yaw,pitch]=viewAngles();
-  setCam(yaw,pitch,G.state==='menu'?62:curFov());
+  const roll=G.state==='menu'?0:G.roll||0;
+  renderWorld(yaw,pitch,G.state==='menu'?62:curFov(),roll,W/2,H/2);
+  if(G.state==='menu') return;
+  // barrel point on screen (world drawn rolled around the centre when leaning)
+  const [by,bpch]=barrelAngles(); setCam(yaw,pitch,curFov());
+  const d=aimDir(by,bpch), c=toCam(cam.x+d[0]*200,cam.y+d[1]*200,cam.z+d[2]*200);
+  let P=c[2]>NEAR?proj(c):[W/2,H/2]; const cr=Math.cos(roll), sr=Math.sin(roll), dx=P[0]-W/2, dy=P[1]-H/2;
+  G.bp=[W/2+dx*cr-dy*sr, H/2+dx*sr+dy*cr];
+  drawGun(G.bp);
+  drawReticle(by,bpch,roll);
+}
+// Draws the world from a camera, with the camera's centre placed at (ox,oy) on screen and rolled by `roll`.
+function renderWorld(yaw,pitch,vfov,roll,ox,oy){
+  const m=MAPS[G.mapKey]||MAPS.customs;
+  setCam(yaw,pitch,vfov);
+  ctx.save(); ctx.translate(ox,oy); if(roll) ctx.rotate(roll); ctx.translate(-W/2,-H/2);
   const f=cam.f, hz=H/2+Math.tan(pitch)*f;
   // sky
   let g=ctx.createLinearGradient(0,hz-f*1.3,0,hz); g.addColorStop(0,m.sky[0]); g.addColorStop(1,m.sky[1]);
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=g; ctx.fillRect(-W,-H,W*3,H*3);
   if(m.sun){ const sy=m.sun.yaw*D2R, se=m.sun.el*D2R, c=toCam(Math.sin(sy)*Math.cos(se)*1000,1.6+Math.sin(se)*1000,Math.cos(sy)*Math.cos(se)*1000);
     if(c[2]>1){ const p=proj(c), r=f*.9; const sg=ctx.createRadialGradient(p[0],p[1],0,p[0],p[1],r); sg.addColorStop(0,`rgba(${m.sun.c},.55)`); sg.addColorStop(.08,`rgba(${m.sun.c},.25)`); sg.addColorStop(1,`rgba(${m.sun.c},0)`); ctx.fillStyle=sg; ctx.fillRect(p[0]-r,p[1]-r,r*2,r*2); } }
   // skyline
@@ -1114,7 +1203,7 @@ function render(){
   }
   // ground
   g=ctx.createLinearGradient(0,hz,0,hz+f*1.2); g.addColorStop(0,rgb(m.fog)); g.addColorStop(.08,rgb(fogMix(m.ground,60,m))); g.addColorStop(1,rgb(m.ground));
-  ctx.fillStyle=g; ctx.fillRect(0,Math.max(0,hz-1),W,H);
+  ctx.fillStyle=g; ctx.fillRect(-W,hz-1,W*3,H*3);
   drawGrid(m);
   // draw list
   const list=[];
@@ -1124,12 +1213,7 @@ function render(){
   list.sort((a,b)=>b.d-a.d);
   for(const it of list){ if(it.k===0) drawBox(it.o,m,it.d); else if(it.k===1) drawTarget(it.o,m,it.d); else drawFx(it.o,m,it.d); }
   if(m.lamps) drawLamps();
-  if(G.state!=='menu'){
-    const [by,bpch]=barrelAngles(), d=aimDir(by,bpch), c=toCam(cam.x+d[0]*200,cam.y+d[1]*200,cam.z+d[2]*200);
-    G.bp=c[2]>NEAR?proj(c):[W/2,H/2];
-    drawGun(G.bp);
-    drawReticle();
-  }
+  ctx.restore();
 }
 const gridPaths=Array.from({length:6},()=>new Path2D());
 function drawGrid(m){
@@ -1207,31 +1291,51 @@ function drawLamps(){
     const gr=ctx.createRadialGradient(p[0],p[1],0,p[0],p[1],r); gr.addColorStop(0,'rgba(255,214,140,.35)'); gr.addColorStop(1,'rgba(255,214,140,0)'); ctx.fillStyle=gr; ctx.fillRect(p[0]-r,p[1]-r,r*2,r*2);
     ctx.fillStyle='rgba(255,236,190,.9)'; ctx.fillRect(p[0]-cam.f*.4/c[2],p[1]-cam.f*.05/c[2],cam.f*.8/c[2],cam.f*.1/c[2]); }
 }
-function drawReticle(){
-  const s=S(), mag=opticMag(), a=G.adsT;
-  let cx=G.bp[0], cy=G.bp[1];
-  if(mag>1&&a>.55){ // scope
-    const R=Math.min(W,H)*.46*lerp(.85,1,(a-.55)/.45);
-    ctx.save(); ctx.fillStyle='#000'; ctx.beginPath(); ctx.rect(0,0,W,H); ctx.arc(cx,cy,R,0,Math.PI*2,true); ctx.fill();
-    const rg=ctx.createRadialGradient(cx,cy,R*.82,cx,cy,R); rg.addColorStop(0,'rgba(0,0,0,0)'); rg.addColorStop(1,'rgba(0,0,0,.92)'); ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill();
-    ctx.strokeStyle='rgba(8,8,8,.95)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(cx-R,cy); ctx.lineTo(cx-8,cy); ctx.moveTo(cx+8,cy); ctx.lineTo(cx+R,cy); ctx.moveTo(cx,cy+8); ctx.lineTo(cx,cy+R); ctx.stroke();
-    ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(cx-R,cy); ctx.lineTo(cx-R*.42,cy); ctx.moveTo(cx+R*.42,cy); ctx.lineTo(cx+R,cy); ctx.moveTo(cx,cy+R*.42); ctx.lineTo(cx,cy+R); ctx.stroke();
-    ctx.lineWidth=1.2; for(let i=1;i<=4;i++){ const o=i*R*.08; ctx.beginPath(); ctx.moveTo(cx-4,cy+o); ctx.lineTo(cx+4,cy+o); ctx.moveTo(cx+o,cy-4); ctx.lineTo(cx+o,cy+4); ctx.moveTo(cx-o,cy-4); ctx.lineTo(cx-o,cy+4); ctx.stroke(); }
-    ctx.fillStyle='#ff2a1a'; ctx.shadowColor='#ff2a1a'; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(cx,cy,1.8,0,7); ctx.fill();
-    ctx.restore(); return;
+function drawReticle(by,bpch,roll){
+  const mag=opticMag(), a=G.adsT, cx=G.bp[0], cy=G.bp[1];
+  if(G.mode&&G.mode.optic){
+    if(a<.45) return;
+    const k=clamp((a-.45)/.55,0,1), e=k*k*(3-2*k);
+    const Ro=H*.31*lerp(.6,1,e), Ri=Ro*.86;
+    ctx.save(); ctx.globalAlpha=e;
+    // magnified view inside the eyepiece (picture-in-picture, like Tarkov)
+    ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,Ri,0,7); ctx.clip();
+    renderWorld(by,bpch,zoomFov(),roll,cx,cy);
+    const lg=ctx.createRadialGradient(cx,cy,Ri*.55,cx,cy,Ri); lg.addColorStop(0,'rgba(170,215,235,.05)'); lg.addColorStop(.8,'rgba(20,30,34,.12)'); lg.addColorStop(1,'rgba(0,0,0,.55)');
+    ctx.fillStyle=lg; ctx.fillRect(cx-Ri,cy-Ri,Ri*2,Ri*2);
+    // duplex reticle: thick outer posts, fine dotted centre
+    ctx.strokeStyle='rgba(10,12,12,.95)'; ctx.lineCap='butt';
+    ctx.lineWidth=Math.max(2.5,H*.0045); ctx.beginPath();
+    ctx.moveTo(cx-Ri,cy); ctx.lineTo(cx-Ri*.5,cy); ctx.moveTo(cx+Ri*.5,cy); ctx.lineTo(cx+Ri,cy);
+    ctx.moveTo(cx,cy-Ri); ctx.lineTo(cx,cy-Ri*.5); ctx.moveTo(cx,cy+Ri*.5); ctx.lineTo(cx,cy+Ri); ctx.stroke();
+    ctx.lineWidth=1.1; ctx.setLineDash([2.5,2.5]); ctx.beginPath();
+    ctx.moveTo(cx-Ri*.5,cy); ctx.lineTo(cx+Ri*.5,cy); ctx.moveTo(cx,cy-Ri*.5); ctx.lineTo(cx,cy+Ri*.5); ctx.stroke(); ctx.setLineDash([]);
+    ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx-Ri*.5,cy-3); ctx.lineTo(cx-Ri*.5,cy+3); ctx.moveTo(cx+Ri*.5,cy-3); ctx.lineTo(cx+Ri*.5,cy+3); ctx.stroke();
+    ctx.restore();
+    // eyepiece: thick rubber ring
+    ctx.beginPath(); ctx.arc(cx,cy,Ro,0,Math.PI*2); ctx.moveTo(cx+Ri,cy); ctx.arc(cx,cy,Ri,0,Math.PI*2,true);
+    const rg=ctx.createLinearGradient(cx-Ro,cy-Ro,cx+Ro,cy+Ro); rg.addColorStop(0,'#2b2d2c'); rg.addColorStop(.45,'#141615'); rg.addColorStop(1,'#0b0c0c');
+    ctx.fillStyle=rg; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.07)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx,cy,Ro-3,Math.PI*1.05,Math.PI*1.7); ctx.stroke();
+    ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(cx,cy,Ri+1,0,7); ctx.stroke();
+    // knurled focus ring and mount under the eyepiece
+    const kw=Ro*1.02, ky=cy+Ro*.86, kh=Ro*.2;
+    ctx.beginPath(); ctx.moveTo(cx-kw*.62,ky); ctx.lineTo(cx+kw*.62,ky); ctx.lineTo(cx+kw*.56,ky+kh); ctx.lineTo(cx-kw*.56,ky+kh); ctx.closePath();
+    ctx.fillStyle='#121413'; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=2; ctx.beginPath();
+    for(let x=-kw*.58;x<=kw*.58;x+=kw*.045){ ctx.moveTo(cx+x,ky+3); ctx.lineTo(cx+x*.95,ky+kh-3); } ctx.stroke();
+    ctx.restore();
+    if(S().sway&&G.adsT>.6){ /* breath bar is in the HUD */ }
+    return;
   }
-  if(a>.3){ // red dot / holo
-    ctx.save(); ctx.globalAlpha=clamp((a-.3)/.5,0,1);
-    const R=Math.min(W,H)*.2; ctx.strokeStyle='rgba(20,20,18,.85)'; ctx.lineWidth=R*.12;
-    ctx.beginPath(); ctx.ellipse(cx,cy+R*.08,R*1.15,R*.98,0,0,7); ctx.stroke();
-    ctx.fillStyle='rgba(120,200,255,.04)'; ctx.fill();
-    ctx.shadowColor='#ff2a1a'; ctx.shadowBlur=10; ctx.fillStyle='#ff3a24'; ctx.beginPath(); ctx.arc(cx,cy,2.2,0,7); ctx.fill();
-    ctx.restore(); if(a>.6) return;
+  if(a>.5){ // EOTech-style holo: 68 MOA ring + 1 MOA dot, on the barrel
+    const f=(H/2)/Math.tan(S().fov*D2R/2), rr=Math.max(9,f*Math.tan(34/60*D2R));
+    ctx.save(); ctx.globalAlpha=clamp((a-.5)/.3,0,1);
+    ctx.shadowColor='#ff2a1a'; ctx.shadowBlur=8; ctx.strokeStyle='rgba(255,60,40,.95)'; ctx.fillStyle='#ff3a24'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.stroke(); ctx.beginPath(); ctx.arc(cx,cy,1.6,0,7); ctx.fill();
+    ctx.restore();
   }
-  if(s.crosshair==='off') return;
-  ctx.fillStyle=s.chColor; ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.lineWidth=1;
-  if(s.crosshair==='dot'){ ctx.beginPath(); ctx.arc(cx,cy,2.2,0,7); ctx.fill(); ctx.stroke(); }
-  else { const gp=4+G.flash*4+crossBloom(); for(const [dx,dy,w,h] of [[gp,-1,7,2],[-gp-7,-1,7,2],[-1,gp,2,7],[-1,-gp-7,2,7]]){ ctx.strokeRect(cx+dx-.5,cy+dy-.5,w+1,h+1); ctx.fillRect(cx+dx,cy+dy,w,h);} }
+  // no hip-fire crosshair, like Tarkov
 }
 
 /* ---------------- first-person weapon (3D viewmodel) ---------------- */
@@ -1246,7 +1350,8 @@ const v3={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],add:(a,b)=>[a[0]+b[0],a[1]+
 function vmBuild(kind){
   const F=[]; let part=null; let seed=kind.length*7919;
   const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
-  const begin=(col,mat,mottle=0)=>{ part={faces:[],col,mat,mottle}; };
+  let tag='';
+  const begin=(col,mat,mottle=0)=>{ part={faces:[],col,mat,mottle,tag}; };
   const face=pts=>part.faces.push(pts);
   const end=()=>{
     const all=part.faces.flat(), c=[0,0,0]; all.forEach(v=>{c[0]+=v[0];c[1]+=v[1];c[2]+=v[2];}); c[0]/=all.length; c[1]/=all.length; c[2]/=all.length;
@@ -1256,7 +1361,7 @@ function vmBuild(kind){
       const fc=pts.reduce((s,v)=>v3.add(s,v),[0,0,0]).map(x=>x/pts.length);
       if(v3.dot(n,v3.sub(fc,c))<0) n=v3.mul(n,-1);
       const j=part.mottle?1+(rnd()*2-1)*part.mottle:1;
-      F.push({pts,n,col:part.col.map(x=>x*j),mat:part.mat});
+      F.push({pts,n,col:part.col.map(x=>x*j),mat:part.mat,tag:part.tag});
     }
   };
   const box=(x0,x1,y0,y1,z0,z1,col,mat='metal',mt=0)=>{ begin(col,mat,mt);
@@ -1305,11 +1410,13 @@ function vmBuild(kind){
   // optic
   if(long){
     box(-.013,.013,.039,.064,.17,.19,BLK2); box(-.013,.013,.039,.064,.33,.35,BLK2);   // rings
+    tag='scope';
     cyl(0,.084,.016,.016,.1,.4,10,[42,42,37]);                                        // tube
     cyl(0,.084,.021,.021,.06,.13,10,[36,36,32]);                                      // eyepiece
     cyl(0,.084,.016,.027,.38,.42,10,[42,42,37],'metal',false); cyl(0,.084,.027,.027,.42,.48,10,[38,38,34]); // objective bell
     cyl(0,.105,.012,.012,.24,.27,8,[48,48,42]);                                       // elevation turret (as stub)
     box(-.036,-.016,.074,.094,.24,.27,[48,48,42]);                                    // windage turret, left side
+    tag='';
   } else {
     box(-.021,.021,.045,.058,.245,.345,BLK2);                     // EOTech base
     box(-.021,-.016,.058,.1,.255,.315,BLK); box(.016,.021,.058,.1,.255,.315,BLK); // hood sides
@@ -1334,12 +1441,15 @@ function vmBuild(kind){
 }
 function drawGun(P){
   const s=S(); if(!s.gun||G.state==='deploy') return;
-  const a=G.adsT; if(a>.6) return;
+  const a=G.adsT;
   const kind=G.mode&&G.mode.optic?'sr25':'m4', M=VM[kind]||(VM[kind]=vmBuild(kind));
-  const [vy,vp]=viewAngles(), [by,bpch]=barrelAngles(), ry=by-vy, rp=bpch-vp;
-  const e=(t=>t*t*(3-2*t))(clamp(a/.6,0,1)), w=curWeapon();
+  const ry=G.bo.y*D2R, rp=(G.bo.p-G.cbob)*D2R;   // barrel offset in the screen frame
+  const w=curWeapon();
   const HP={x:.19,y:-.15,z:.26,roll:.38}; // hip hold, matched to in-raid footage
-  let px=lerp(HP.x,0,e), py=lerp(HP.y,-.08,e), pz=lerp(HP.z,.04,e), roll=lerp(HP.roll,0,e);
+  const long=kind==='sr25', AP=long?{y:-.084,z:-.02}:{y:-.079,z:-.11};   // ADS: sight axis on the eye
+  const e2=(t=>t*t*(3-2*t))(clamp(a,0,1));
+  let px=lerp(HP.x,0,e2), py=lerp(HP.y,AP.y,e2), pz=lerp(HP.z,AP.z,e2), roll=lerp(HP.roll,0,e2);
+  if(G.stance==='prone'){ py-=.02*(1-e2); }
   const spF=clamp(Math.hypot(G.vx,G.vz)/WALK.max,0,1), ph=G.stepPh;
   px+=Math.sin(ph)*.007*spF; py+=Math.sin(ph*2)*.005*spF;
   pz-=G.flash*.03;
@@ -1356,10 +1466,11 @@ function drawGun(P){
     const pts=fc.pts.map(T), n=rot(fc.n);
     const c=pts.reduce((q,v)=>[q[0]+v[0],q[1]+v[1],q[2]+v[2]],[0,0,0]).map(x=>x/pts.length);
     if(fc.mat!=='glass'&&v3.dot(n,c)>=0) continue;
+    if(fc.tag==='scope'&&a>.45) continue;   // looking through the eyepiece
     list.push({pts,n,c,fc,d:Math.hypot(c[0],c[1],c[2])});
   }
   list.sort((p,q)=>q.d-p.d);
-  ctx.save(); ctx.globalAlpha=clamp(1-a*1.4,0,1); ctx.lineJoin='round';
+  ctx.save(); ctx.lineJoin='round';
   for(const it of list){
     // clip to the near plane
     const src=it.pts, poly=[];
@@ -1433,7 +1544,7 @@ function renderMenu(){
 function ago(t){ const s=(Date.now()-t)/1000; if(s<60) return 'just now'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
 
 /* settings drawer */
-function openSettings(){ syncSettingsUI(); $('#settings').classList.add('open'); $('#scrim').classList.add('open'); }
+function openSettings(){ syncSettingsUI(); capturing=null; renderBinds(); $('#settings').classList.add('open'); $('#scrim').classList.add('open'); }
 function closeSettings(){ $('#settings').classList.remove('open'); $('#scrim').classList.remove('open'); renderMenu(); }
 function syncSettingsUI(){
   const s=S();
@@ -1448,6 +1559,22 @@ $$('#settings [data-k]').forEach(el=>{
     S()[k]=v; if(k==='volume'&&AC.m) AC.m.gain.value=v; saveStore(); renderMenu(); });
 });
 $('#setBtn').onclick=$('#setBtn2').onclick=$('#sensChip').onclick=openSettings;
+// ---- key binds ----
+let capturing=null;
+function keyName(c){ if(!c) return '—';
+  const m={Mouse0:'LMB',Mouse1:'MMB',Mouse2:'RMB',Mouse3:'MOUSE 4',Mouse4:'MOUSE 5',AltLeft:'ALT',ShiftLeft:'SHIFT',ControlLeft:'CTRL',Space:'SPACE',CapsLock:'CAPS',Tab:'TAB',Backquote:'`'};
+  return m[c]||c.replace(/^Key/,'').replace(/^Digit/,'').replace(/^Arrow/,'').toUpperCase(); }
+function renderBinds(){
+  $('#binds').innerHTML=Object.keys(DEFAULT_BINDS).map(a=>`<div class="row"><label>${BIND_LABELS[a]}</label><button class="bindbtn${capturing===a?' wait':''}" data-a="${a}">${capturing===a?'Press a key…':keyName(S().binds[a])}</button></div>`).join('');
+  $$('#binds .bindbtn').forEach(b=>b.onclick=e=>{ e.stopPropagation(); capturing=b.dataset.a; renderBinds(); });
+}
+function bindCapture(code,e){
+  if(!capturing) return false;
+  e.preventDefault(); e.stopPropagation();
+  if(code!=='Escape'){ S().binds[capturing]=code; saveStore(); }
+  capturing=null; renderBinds(); return true;
+}
+$('#resetBinds').onclick=()=>{ S().binds={...DEFAULT_BINDS}; S().leanMode='hold'; saveStore(); syncSettingsUI(); renderBinds(); };
 $('#supportBtn').onclick=()=>{ fetch('/api/support',{method:'POST'}).then(r=>{ if(!r.ok) throw 0; }).catch(()=>window.open('https://github.com/g-hostproxy/Tarkov-Aim-Trainer#support-the-project','_blank')); };
 $('#closeSet').onclick=$('#scrim').onclick=closeSettings;
 $('#resetPB').onclick=()=>{ if(confirm('Reset all personal bests and history?')){ store.pbs={}; store.history=[]; saveStore(); renderMenu(); } };
@@ -1465,7 +1592,9 @@ $('#walkTog').onclick=e=>{ e.stopPropagation(); S().walk=S().walk?0:1; saveStore
 function updWalkTag(){
   if(!G.mode) return; const w=curWeapon();
   const base=w?`${w.name} · ${w.cal}`:(G.mode.optic?`SR-25 · ${S().optic}x optic`:'M4A1 · red dot');
-  $('#hWeap').textContent=base+(S().walk?` · WALK ${Math.round(G.spd*100)}%`:'');
+  const fm=w&&G.mode!==MODES.track?(w.auto?(G.fireAuto?' · AUTO':' · SEMI'):' · SEMI'):'';
+  const zm=G.mode.optic?` · ${opticMag().toFixed(1)}x`:'', stn=G.stanceTo!=='stand'?' · '+G.stanceTo.toUpperCase():'';
+  $('#hWeap').textContent=base.replace(/ · \d+(\.\d+)?x optic/,'')+fm+zm+stn+(S().walk?` · WALK ${Math.round(G.spd*100)}%`:'');
 }
 $('#pause').onclick=e=>{ if(e.target.closest('button')) return; lockPointer(); };
 $('#pRestart').onclick=()=>startMode(G.modeKey,G.warm&&{...G.warm,res:G.warm.res});
@@ -1474,7 +1603,7 @@ $('#rNext').onclick=nextAfterResults;
 $('#rMenu').onclick=()=>{ G.warm=null; toMenu(); };
 
 /* debug hooks for automated testing */
-window.__rr={G,MODES,start(k){ startMode(k); G.state='count'; beginCountdown(); $('#deploy').classList.add('hidden'); },finish,shoot,store};
+window.__rr={G,MODES,start(k){ startMode(k); G.state='count'; beginCountdown(); $('#deploy').classList.add('hidden'); },finish,shoot,store,barrelAngles,forceLock:()=>{locked=true;},press:c=>{G.held[c]=true;onPress(c);},release:c=>{G.held[c]=false;onRelease(c);},cam};
 
 /* boot */
 (async()=>{

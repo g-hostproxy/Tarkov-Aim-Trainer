@@ -30,6 +30,8 @@ DRILLS
 CONTROLS
   LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov)
   WASD walk (toggle it on the screen before each drill) · scroll = walk speed
+  C crouch · X prone · Q/E lean · Alt+Q/E or Alt+A/D slow lean · B fire mode
+  Alt+scroll scope zoom · every key can be rebound in Settings > Key binds
   SHIFT hold breath · R reload · ESC pause · F11 fullscreen · 1-6 quick start
 
 YOUR DATA
