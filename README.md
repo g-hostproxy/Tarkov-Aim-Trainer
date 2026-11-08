@@ -52,6 +52,9 @@ Defaults match Tarkov, and every key can be rebound under **Settings → Key bin
 - **Sight choice**: Settings → Sight. Auto gives the holo on close drills and the scope on Long Shot; Holo or Scope forces one on every drill.
 - **Corner Peek** mixes PMCs that swing out full body with PMCs that corner-lean from behind cover, showing only head, shoulder and rifle.
 - **No hit markers**, like Tarkov.
+- **Armor** (toggle before each drill): plates on the chest and stomach soak most of the damage and wear down with every hit, so body kills take about three times as many shots. Arms and legs are unarmored, and headshots are still one tap.
+- **Ergonomics** slider (before each drill): lower ergo means slower ADS and a heavier, swayier gun. 60 is the default feel.
+- Reloading drops you out of ADS, like in Tarkov.
 - **Bullet holes** stay where your misses land (up to 45 at a time, oldest removed first).
 - **Leaning** rolls the view and moves your head about 40 cm out from cover.
 - **Full auto** climbs hard for the first few rounds, levels off, wobbles side to side, and pulls back down once you let go.
