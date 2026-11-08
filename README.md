@@ -34,7 +34,7 @@ LMB fire · RMB ADS (tap = toggle, hold = hold, like Tarkov) · WASD walk · scr
 
 Walking can be switched on or off on the screen before each drill. With it on, WASD moves you (slower backwards, sideways and while aiming) and the scroll wheel sets your walk speed, like in raid.
 
-The barrel moves on its own, separate from your view: it lags behind fast turns, bobs while you walk, and kicks on every shot. Shots go where the barrel points, not to the middle of the screen, so a centre-screen crosshair overlay drifts off your point of impact the same way it does in Tarkov. Under Settings you can set barrel movement to Tarkov, Reduced or Off, hide the weapon model, or show a red ring where the barrel points as a training aid.
+The barrel moves on its own, separate from your view, using the sway model from [TarkovCrosshair](https://github.com/g-hostproxy/TarkovCrosshair) (calibrated against an in-game laser). Keys reach the weapon about 235 ms late. Holding A swings the barrel right and holding D swings it left, and it stays there until you let go. Walking forward dips it, walking back lifts it, and it bobs in a figure-8 at Tarkov's 1.2 Hz step rate. Fast mouse turns make it lag, and every shot kicks it up; on full auto the climb levels off and recovers once you stop. The crosshair, red dot and scope all ride on the barrel, so they always show where the shot will land. Under Settings you can set barrel movement to Tarkov, Reduced or Off, and turn the weapon model off.
 
 ## Your data
 
